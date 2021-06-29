@@ -1,0 +1,14 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Eldes Cloud Service",
+        "description": "Please login to your Eldes cloud services account.",
+        "data": {
+          "email": "E-mail",
+          "password": "Password"
+        }
+      }
+    }
+  }
+}
