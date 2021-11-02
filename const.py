@@ -1,13 +1,29 @@
-"""Constants for Eldes Alarms integration."""
+"""Constant values for the Eldes component."""
 
-# name for the integration
+# General
 DOMAIN = "eldes"
+DEFAULT_NAME = "Eldes"
+DEFAULT_ZONE = "Zone"
 
-# API url
+SIGNAL_ELDES_UPDATE_RECEIVED = "eldes_update_received_{}_{}"
+UPDATE_LISTENER = "update_listener"
+CONF_FALLBACK = "fallback"
+DATA = "data"
+UPDATE_TRACK = "update_track"
+UNIQUE_ID = "unique_id"
+
+# API
 API_URL = "https://cloud.eldesalarms.com:8083/api/"
 
-# paths to endpoints
+# Endpoints
 API_PATHS = {
-    "AUTH": "auth/login",
+    "AUTH": "auth/",
     "DEVICE": "device/"
+}
+
+# Alarm modes
+ALARM_MODES = {
+    "DISARM": "disarm",
+    "ARM_AWAY": "arm",
+    "ARM_HOME": "armstay"
 }

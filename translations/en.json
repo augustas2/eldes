@@ -5,10 +5,16 @@
         "title": "Eldes Cloud Service",
         "description": "Please login to your Eldes cloud services account.",
         "data": {
-          "email": "E-mail",
+          "username": "User name",
           "password": "Password"
         }
       }
+    },
+    "error": {
+      "cannot_connect": "Can't login. Try again later.",
+      "invalid_auth": "User name or password is incorrect.",
+      "no_homes": "No devices found in your account.",
+      "unknown": "Unknown error."
     }
   }
 }

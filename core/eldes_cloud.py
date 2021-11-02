@@ -1,6 +1,10 @@
-import logging
+"""
+Implementation for Eldes Cloud
+"""
 
-from aiohttp import ClientSession
+import logging
+import datetime
+from requests import Session
 
 from ..const import API_URL, API_PATHS
 
@@ -8,76 +12,161 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class EldesCloud:
-    auth = None
-    devices = None
+    """Interacts with a Eldes Alarm via public API."""
 
-    def __init__(self, session: ClientSession):
-        self.session = session
+    timeout = 10
 
-    async def login(self, email: str, password: str):
-        try:
-            data = {
-                'email': email,
-                'password': password,
-                'hostDeviceId': ''
-            }
+    def _setOAuthHeader(self, data):
+        # expires_in = float(data['expires_in'])
+        expires_in = 120  # 2 minutes in seconds
 
-            r = await self.session.post(
-                API_URL + "" + API_PATHS["AUTH"],
-                json=data,
-                headers={
-                    "X-Requested-With": "XMLHttpRequest",
-                    "x-whitelable": "eldes"
-                })
-            auth = await r.json()
-            self.auth = auth
-            _LOGGER.info(auth)
+        if 'refreshToken' in data:
+            self.refresh_token = data['refreshToken']
 
-            devices = await self.get_devices()
-            if devices is None:
-                return False
+        if expires_in is not None:
+            self.refresh_at = datetime.datetime.now()
+            self.refresh_at = self.refresh_at + datetime.timedelta(seconds=expires_in)
 
-            for index, device in enumerate(devices):
-                device_info = await self.get_device_info(device["imei"])
-                if device_info is None:
-                    return False
-                devices[index]["info"] = device_info
+            # we substract 30 seconds from the correct refresh time
+            # then we have a 30 seconds timespan to get a new refresh_token
+            self.refresh_at = self.refresh_at + datetime.timedelta(seconds=-30)
 
-            self.devices = devices
-            _LOGGER.info(devices)
+        if 'token' in data:
+            self.headers['Authorization'] = 'Bearer ' + data['token']
 
-            return True
+    def _login(self, username, password):
+        data = {
+            'email': username,
+            'password': password,
+            'hostDeviceId': ''
+        }
 
-        except Exception as e:
-            _LOGGER.exception(f"Can't login to Eldes Cloud Services: {e}")
-            return False
+        url = API_URL + "" + API_PATHS["AUTH"] + "login"
 
-    async def get_devices(self):
-        try:
-            r = await self.session.get(
-                API_URL + "" + API_PATHS["DEVICE"] + "list",
-                headers={
-                    "Authorization": "Bearer " + self.auth["token"]
-                }
-            )
-            resp = await r.json()
-            return resp["deviceListEntries"]
-        except Exception as e:
-            _LOGGER.exception(f"Can't retrieve device list: {e}")
+        response = self._http_session.request(
+            "post",
+            url,
+            timeout=self.timeout,
+            json=data,
+            headers=self.headers
+        ).json()
 
-        return None
+        self._setOAuthHeader(response)
 
-    async def get_device_info(self, device_imei: str):
-        try:
-            r = await self.session.get(
-                API_URL + "" + API_PATHS["DEVICE"] + "info?imei=" + device_imei,
-                headers={
-                    "Authorization": "Bearer " + self.auth["token"]
-                }
-            )
-            resp = await r.json()
-            return resp
-        except Exception as e:
-            _LOGGER.exception(f"Can't retrieve device info: {e}")
+    def renew_token(self):
+        """Updates auth token."""
+        headers = self.headers
+        headers['Authorization'] = 'Bearer ' + self.refresh_token
 
-        return None
+        url = API_URL + "" + API_PATHS["AUTH"] + "token"
+
+        response = self._http_session.request(
+            "get",
+            url,
+            timeout=self.timeout,
+            headers=headers
+        ).json()
+
+        _LOGGER.debug(
+            "renew_token response: %s",
+            response
+        )
+
+        self._setOAuthHeader(response)
+
+    def get_devices(self):
+        """Gets device list."""
+        url = API_URL + "" + API_PATHS["DEVICE"] + "list"
+
+        response = self._http_session.request(
+            "get",
+            url,
+            headers=self.headers,
+            timeout=self.timeout
+        ).json()
+
+        _LOGGER.debug(
+            "get_devices response: %s",
+            response
+        )
+
+        return response
+
+    def get_device_info(self, imei):
+        """Gets device information."""
+        url = API_URL + "" + API_PATHS["DEVICE"] + "info?imei=" + imei
+
+        response = self._http_session.request(
+            "get",
+            url,
+            headers=self.headers,
+            timeout=self.timeout
+        ).json()
+
+        _LOGGER.debug(
+            "get_device_info response: %s",
+            response
+        )
+
+        return response
+
+    def get_device_partitions(self, imei):
+        """Gets device partitions/zones."""
+        data = {
+            'imei': imei
+        }
+
+        url = API_URL + "" + API_PATHS["DEVICE"] + "partition/list?imei=" + imei
+
+        response = self._http_session.request(
+            "post",
+            url,
+            headers=self.headers,
+            json=data,
+            timeout=self.timeout
+        ).json()
+
+        _LOGGER.debug(
+            "get_device_partitions response: %s",
+            response
+        )
+
+        return response
+
+    def set_alarm(self, mode, imei, zone_id):
+        """Sets alarm to given mode."""
+        data = {
+            'imei': imei,
+            'partitionIndex': zone_id
+        }
+
+        url = API_URL + "" + API_PATHS["DEVICE"] + "action/" + mode
+
+        response = self._http_session.request(
+            "post",
+            url,
+            headers=self.headers,
+            json=data,
+            timeout=self.timeout
+        )
+
+        _LOGGER.debug(
+            "set_alarm response: %s",
+            response
+        )
+
+        return response
+
+    # Ctor
+    def __init__(self, username, password, timeout=10, http_session=None):
+        """Performs login and save session cookie."""
+        # HTTPS Interface
+        self.headers = {
+            'X-Requested-With': 'XMLHttpRequest',
+            'x-whitelable': 'eldes'
+        }
+        self.refresh_token = ''
+        self.refresh_at = datetime.datetime.now() + datetime.timedelta(minutes=3)
+
+        self._http_session = http_session if http_session else Session()
+        self._login(username, password)
