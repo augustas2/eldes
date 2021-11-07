@@ -27,3 +27,8 @@ ALARM_MODES = {
     "ARM_AWAY": "arm",
     "ARM_HOME": "armstay"
 }
+
+# Output types
+OUTPUT_TYPES = {
+    "SWITCH": "SWITCH"
+}

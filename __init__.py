@@ -26,7 +26,7 @@ from .core.eldes_cloud import EldesCloud
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS = ["binary_sensor", "sensor", "alarm_control_panel"]
+PLATFORMS = ["binary_sensor", "sensor", "switch", "alarm_control_panel"]
 
 MIN_TIME_BETWEEN_UPDATES = timedelta(minutes=1)
 SCAN_INTERVAL = timedelta(minutes=2)
