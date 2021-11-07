@@ -133,6 +133,29 @@ class EldesCloud:
 
         return response
 
+    def get_device_outputs(self, imei):
+        """Gets device outputs/automations."""
+        data = {
+            'imei': imei
+        }
+
+        url = API_URL + "" + API_PATHS["DEVICE"] + "list-outputs/" + imei
+
+        response = self._http_session.request(
+            "post",
+            url,
+            headers=self.headers,
+            json=data,
+            timeout=self.timeout
+        ).json()
+
+        _LOGGER.debug(
+            "get_device_outputs response: %s",
+            response
+        )
+
+        return response
+
     def set_alarm(self, mode, imei, zone_id):
         """Sets alarm to given mode."""
         data = {

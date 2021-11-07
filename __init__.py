@@ -116,7 +116,6 @@ class EldesConnector:
         self.hass = hass
         self._username = username
         self._password = password
-        self._fallback = fallback
 
         self.home_id = None
         self.home_name = None
@@ -124,18 +123,13 @@ class EldesConnector:
         self.devices = None
         self.data = {}
 
-    @property
-    def fallback(self):
-        """Return fallback flag to Smart Schedule."""
-        return self._fallback
-
     def setup(self):
         """Connect to Eldes and fetch the devices."""
         self.eldes = EldesCloud(self._username, self._password)
 
         # Load devices
         devices_response = self.eldes.get_devices()
-        devices = devices_response["deviceListEntries"]
+        devices = devices_response.get("deviceListEntries", [])
 
         # Renew token before other requests
         self.eldes.renew_token()
@@ -164,15 +158,19 @@ class EldesConnector:
         try:
             info = self.eldes.get_device_info(device_imei)
             partitions = self.eldes.get_device_partitions(device_imei)
+            outputs = self.eldes.get_device_outputs(device_imei)
         except RuntimeError:
             _LOGGER.error(
-                "Unable to connect to Eldes while updating %s %s",
-                device_imei,
+                "Unable to connect to Eldes while updating %s",
+                device_imei
             )
             return
 
         self.data[device_imei] = info
         self.data[device_imei]["partitions"] = partitions.get("partitions", [])
+        self.data[device_imei]["outputs"] = outputs.get("deviceOutputs", [])
+
+        _LOGGER.error(self.data[device_imei])
 
         _LOGGER.debug(
             "Dispatching update to %s %s %s: %s",
