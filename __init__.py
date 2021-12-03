@@ -1,7 +1,6 @@
-"""Support for the (unofficial) Eldes API."""
+"""Support for the Eldes API."""
 from datetime import timedelta
 import logging
-
 import requests.exceptions
 
 from homeassistant.config_entries import ConfigEntry
@@ -14,22 +13,20 @@ from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.util import Throttle
 
 from .const import (
-    CONF_FALLBACK,
     DATA,
     DOMAIN,
     SIGNAL_ELDES_UPDATE_RECEIVED,
     UPDATE_LISTENER,
     UPDATE_TRACK,
 )
-
 from .core.eldes_cloud import EldesCloud
 
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = ["binary_sensor", "sensor", "switch", "alarm_control_panel"]
 
-MIN_TIME_BETWEEN_UPDATES = timedelta(minutes=1)
-SCAN_INTERVAL = timedelta(minutes=2)
+MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=30)
+SCAN_INTERVAL = timedelta(minutes=1)
 
 CONFIG_SCHEMA = cv.deprecated(DOMAIN)
 
@@ -37,13 +34,10 @@ CONFIG_SCHEMA = cv.deprecated(DOMAIN)
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Eldes from a config entry."""
 
-    _async_import_options_from_data_if_missing(hass, entry)
-
     username = entry.data[CONF_USERNAME]
     password = entry.data[CONF_PASSWORD]
-    fallback = entry.options.get(CONF_FALLBACK, True)
 
-    eldes_connector = EldesConnector(hass, username, password, fallback)
+    eldes_connector = EldesConnector(hass, username, password)
 
     try:
         await hass.async_add_executor_job(eldes_connector.setup)
@@ -82,14 +76,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-@callback
-def _async_import_options_from_data_if_missing(hass: HomeAssistant, entry: ConfigEntry):
-    options = dict(entry.options)
-    if CONF_FALLBACK not in options:
-        options[CONF_FALLBACK] = entry.data.get(CONF_FALLBACK, True)
-        hass.config_entries.async_update_entry(entry, options=options)
-
-
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry):
     """Handle options update."""
     await hass.config_entries.async_reload(entry.entry_id)
@@ -111,7 +97,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
 class EldesConnector:
     """An object to store the Eldes data."""
 
-    def __init__(self, hass, username, password, fallback):
+    def __init__(self, hass, username, password):
         """Initialize Eldes Connector."""
         self.hass = hass
         self._username = username
@@ -155,6 +141,7 @@ class EldesConnector:
     def update_sensor(self, device_imei):
         """Update the internal data from Eldes."""
         _LOGGER.debug("Updating %s %s", device_imei)
+
         try:
             info = self.eldes.get_device_info(device_imei)
             partitions = self.eldes.get_device_partitions(device_imei)

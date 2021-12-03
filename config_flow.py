@@ -1,13 +1,13 @@
 """Adds config flow for Eldes Alarms."""
 import logging
-from homeassistant import config_entries, core, exceptions
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
-from homeassistant.core import callback
 import requests.exceptions
 import voluptuous as vol
 
+from homeassistant import config_entries, core, exceptions
+from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
+
 from .core.eldes_cloud import EldesCloud
-from .const import DOMAIN, UNIQUE_ID, CONF_FALLBACK
+from .const import DOMAIN, UNIQUE_ID
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -17,7 +17,12 @@ from homeassistant.const import (
     STATE_ALARM_ARMING
 )
 
-from .const import DATA, DOMAIN, SIGNAL_ELDES_UPDATE_RECEIVED, ALARM_MODES
+from .const import (
+    DATA,
+    DOMAIN,
+    SIGNAL_ELDES_UPDATE_RECEIVED,
+    ALARM_MODES
+)
 from .entity import EldesZoneEntity
 
 _LOGGER = logging.getLogger(__name__)

@@ -6,35 +6,18 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
-from .const import DATA, DOMAIN, SIGNAL_ELDES_UPDATE_RECEIVED
+from .const import (
+    DATA,
+    DOMAIN,
+    SIGNAL_ELDES_UPDATE_RECEIVED,
+    SENSORS,
+    SIGNAL_STRENGTH_MAP,
+    BOOLEAN_MAP,
+    BATTERY_STATUS_MAP
+)
 from .entity import EldesDeviceEntity
 
 _LOGGER = logging.getLogger(__name__)
-
-DEVICE_SENSORS = [
-    "battery status",
-    "GSM strength",
-    "phone number",
-    "view cameras allowed"
-]
-
-SIGNAL_STRENGTH_MAP = {
-    0: 0,
-    1: 30,
-    2: 60,
-    3: 80,
-    4: 100
-}
-
-BOOLEAN_MAP = {
-    True: "Yes",
-    False: "No"
-}
-
-BATTERY_STATUS_MAP = {
-    True: "OK",
-    False: "Bad"
-}
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
@@ -48,7 +31,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         entities.extend(
             [
                 EldesDeviceSensor(eldes, device, variable)
-                for variable in DEVICE_SENSORS
+                for variable in SENSORS
             ]
         )
 

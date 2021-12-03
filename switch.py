@@ -6,15 +6,10 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
-from .const import DATA, DOMAIN, SIGNAL_ELDES_UPDATE_RECEIVED, OUTPUT_TYPES
+from .const import DATA, DOMAIN, SIGNAL_ELDES_UPDATE_RECEIVED, OUTPUT_TYPES, OUTPUT_ICONS_MAP
 from .entity import EldesDeviceEntity
 
 _LOGGER = logging.getLogger(__name__)
-
-BATTERY_STATUS_MAP = {
-    True: "OK",
-    False: "Bad"
-}
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):

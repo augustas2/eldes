@@ -9,14 +9,15 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
-from .const import DATA, DOMAIN, SIGNAL_ELDES_UPDATE_RECEIVED
+from .const import (
+    DATA,
+    DOMAIN,
+    SIGNAL_ELDES_UPDATE_RECEIVED,
+    BINARY_SENSORS
+)
 from .entity import EldesDeviceEntity
 
 _LOGGER = logging.getLogger(__name__)
-
-DEVICE_SENSORS = [
-    "connection status"
-]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
@@ -30,7 +31,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         entities.extend(
             [
                 EldesDeviceBinarySensor(eldes, device, variable)
-                for variable in DEVICE_SENSORS
+                for variable in BINARY_SENSORS
             ]
         )
 

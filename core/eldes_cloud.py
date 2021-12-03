@@ -1,7 +1,4 @@
-"""
-Implementation for Eldes Cloud
-"""
-
+"""Implementation for Eldes Cloud"""
 import logging
 import datetime
 from requests import Session
