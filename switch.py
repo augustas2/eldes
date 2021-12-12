@@ -1,7 +1,7 @@
 """Support for Eldes sensors."""
 import logging
 
-from homeassistant.components.sensor import SwitchEntity
+from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
@@ -19,13 +19,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     entities = []
 
     # Create switches
-    for device in devices:
-        entities.extend(
-            [
-                EldesSwitch(eldes, output, device)
-                for output in device["outputs"] if output.type == OUTPUT_TYPES.SWITCH
-            ]
-        )
+    try:
+        for device in devices:
+            if "outputs" in device:
+                for output in device["outputs"]:
+                    if output["type"] == OUTPUT_TYPES["SWITCH"]:
+                        entities.extend(
+                            [
+                                EldesSwitch(eldes, device, output)
+                            ]
+                        )
+    except KeyError:
+        pass
 
     if entities:
         async_add_entities(entities, True)
@@ -34,15 +39,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 class EldesSwitch(EldesDeviceEntity, SwitchEntity):
     """Representation of the Eldes switch."""
 
-    def __init__(self, eldes, output, device_variable):
+    def __init__(self, eldes, device, output):
         """Initialize of the Eldes switch."""
-        super().__init__(output)
+        super().__init__(device)
         self._eldes = eldes
 
-        self.device_variable = device_variable
-
-        self._unique_id = f"{device_variable} {self.device_id} {eldes.home_id}"
-
+        self._output_id = output["id"]
+        self._output_name = output["name"]
+        self._unique_id = f"{output['id']} {eldes.home_id}"
         self._state = None
 
     async def async_added_to_hass(self):
@@ -67,28 +71,59 @@ class EldesSwitch(EldesDeviceEntity, SwitchEntity):
     @property
     def name(self):
         """Return the name of the output."""
-        return f"{self.device_name} {self.device_variable}"
+        return self._output_name
 
     @property
     def is_on(self):
         """Return true if switch is on."""
         return self._state
 
-    """@property
+    @property
     def icon(self):
-        Return the icon of this sensor.
+        """Return the icon of this switch."""
         try:
-            self._device_info = self._eldes.data[self.device_id]
+            output_info = next(
+                (
+                    output for output in self._eldes.data[self.device_id]["outputs"]
+                    if output["id"] == self._output_id
+                ), None
+            )
+
+            if output_info is not None:
+                return OUTPUT_ICONS_MAP[output_info.get("iconName"), "ICON_1"]
+
         except KeyError:
+            pass
+
+        return None
+
+    async def async_turn_on(self):
+        """Turn the entity on."""
+        try:
+            await self._eldes.eldes.turn_on_output(
+                self.device_id,
+                self._output_id
+            )
+        except Exception as err:
+            _LOGGER.error('Error while turning on %s: %s', self._output_name, err)
             return
 
-        if self.device_variable == "phone number":
-            return "mdi:cellphone"
+        self._state = True
+        self.async_write_ha_state()
 
-        if self.device_variable == "view cameras allowed":
-            return "mdi:cctv"
+    async def async_turn_off(self):
+        """Turn the entity off."""
+        try:
+            await self._eldes.eldes.turn_off_output(
+                self.device_id,
+                self._output_id
+            )
+        except Exception as err:
+            _LOGGER.error('Error while turning off %s: %s', self._output_name, err)
+            return
 
-        return None"""
+        self._state = False
+        self.async_write_ha_state()
 
     @callback
     def _async_update_callback(self):
@@ -99,12 +134,15 @@ class EldesSwitch(EldesDeviceEntity, SwitchEntity):
     @callback
     def _async_update_output_data(self):
         """Handle update callbacks."""
-        self._output_info = next(
-            (
-                output for output in self._eldes.data[self.device_id]["outputs"]
-                if output["id"] == self.output_id
-            ), None
-        )
+        try:
+            output_info = next(
+                (
+                    output for output in self._eldes.data[self.device_id]["outputs"]
+                    if output["id"] == self._output_id
+                ), None
+            )
 
-        if self._output_info is not None:
-            self._state = self._output_info.get("outputState", False)
+            if output_info is not None:
+                self._state = output_info.get("outputState", False)
+        except KeyError:
+            pass

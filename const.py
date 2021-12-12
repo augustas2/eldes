@@ -43,11 +43,10 @@ BINARY_SENSORS = [
     "connection status"
 ]
 
-SENSORS = [
+DEVICE_SENSORS = [
     "battery status",
     "GSM strength",
-    "phone number",
-    "view cameras allowed"
+    "phone number"
 ]
 
 SIGNAL_STRENGTH_MAP = {

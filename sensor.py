@@ -10,7 +10,7 @@ from .const import (
     DATA,
     DOMAIN,
     SIGNAL_ELDES_UPDATE_RECEIVED,
-    SENSORS,
+    DEVICE_SENSORS,
     SIGNAL_STRENGTH_MAP,
     BOOLEAN_MAP,
     BATTERY_STATUS_MAP
@@ -26,14 +26,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     devices = eldes.devices
     entities = []
 
-    # Create device sensors
-    for device in devices:
-        entities.extend(
-            [
-                EldesDeviceSensor(eldes, device, variable)
-                for variable in SENSORS
-            ]
-        )
+    # Create device & zone sensors
+    try:
+        for device in devices:
+            entities.extend(
+                [
+                    EldesDeviceSensor(eldes, device, variable)
+                    for variable in DEVICE_SENSORS
+                ]
+            )
+    except KeyError:
+        pass
 
     if entities:
         async_add_entities(entities, True)
@@ -42,15 +45,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 class EldesDeviceSensor(EldesDeviceEntity, SensorEntity):
     """Representation of the Eldes sensor."""
 
-    def __init__(self, eldes, device_info, device_variable):
+    def __init__(self, eldes, device, device_variable):
         """Initialize of the Eldes sensor."""
-        super().__init__(device_info)
+        super().__init__(device)
         self._eldes = eldes
 
         self.device_variable = device_variable
-
         self._unique_id = f"{device_variable} {self.device_id} {eldes.home_id}"
-
+        self._state_attributes = None
         self._state = None
 
     async def async_added_to_hass(self):
@@ -96,6 +98,11 @@ class EldesDeviceSensor(EldesDeviceEntity, SensorEntity):
         return None
 
     @property
+    def device_state_attributes(self):
+        """Return the state attributes."""
+        return self._state_attributes
+
+    @property
     def icon(self):
         """Return the icon of this sensor."""
         try:
@@ -116,9 +123,6 @@ class EldesDeviceSensor(EldesDeviceEntity, SensorEntity):
         if self.device_variable == "phone number":
             return "mdi:cellphone"
 
-        if self.device_variable == "view cameras allowed":
-            return "mdi:cctv"
-
         return None
 
     @callback
@@ -131,15 +135,19 @@ class EldesDeviceSensor(EldesDeviceEntity, SensorEntity):
     def _async_update_device_data(self):
         """Handle update callbacks."""
         try:
-            self._device_info = self._eldes.data[self.device_id]
+            device_info = self._eldes.data[self.device_id]
         except KeyError:
             return
 
         if self.device_variable == "battery status":
-            self._state = BATTERY_STATUS_MAP[self._device_info.get("batteryStatus", False)]
+            self._state = BATTERY_STATUS_MAP[device_info.get("batteryStatus", False)]
         elif self.device_variable == "GSM strength":
-            self._state = SIGNAL_STRENGTH_MAP[self._device_info.get("gsmStrength", 0)]
+            self._state = SIGNAL_STRENGTH_MAP[device_info.get("gsmStrength", 0)]
         elif self.device_variable == "phone number":
-            self._state = self._device_info.get("phoneNumber", "")
-        elif self.device_variable == "view cameras allowed":
-            self._state = BOOLEAN_MAP[self._device_info.get("viewCamerasAllowed", False)]
+            self._state = device_info.get("phoneNumber", "")
+
+        self._state_attributes = {
+            "status": device_info.get("status", "SUCCESS"),
+            "migrationPending": device_info.get("migrationPending", False),
+            "viewCamerasAllowed": device_info.get("viewCamerasAllowed", False)
+        }

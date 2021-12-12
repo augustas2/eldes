@@ -41,13 +41,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     entities = []
 
     # Create zone alarms
-    for device in devices:
-        entities.extend(
-            [
-                EldesAlarmPanel(eldes, zone, device)
-                for zone in device["partitions"]
-            ]
-        )
+    try:
+        for device in devices:
+            entities.extend(
+                [
+                    EldesAlarmPanel(eldes, device, zone)
+                    for zone in device["partitions"]
+                ]
+            )
+    except KeyError:
+        pass
 
     if entities:
         async_add_entities(entities, True)
@@ -56,13 +59,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
     """Representation of an Eldes Alarm."""
 
-    def __init__(self, eldes, zone, device):
+    def __init__(self, eldes, device, zone):
         """Initialize of the Eldes Alarm."""
         super().__init__(device["imei"], zone["name"], eldes.home_id, zone["internalId"])
         self._eldes = eldes
 
         self._unique_id = f"{zone['internalId']} {eldes.home_id}"
-
+        self._state_attributes = None
         self._state = None
 
     async def async_added_to_hass(self):
@@ -99,13 +102,18 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
         """Return the list of supported features."""
         return SUPPORT_ALARM_ARM_AWAY | SUPPORT_ALARM_ARM_HOME
 
-    def alarm_disarm(self, code=None):
+    @property
+    def extra_state_attributes(self):
+        """Return the state attributes."""
+        return self._state_attributes
+
+    async def async_alarm_disarm(self, code=None):
         """Send disarm command."""
         self._state = STATE_ALARM_DISARMING
         self.async_write_ha_state()
 
         try:
-            self._eldes.eldes.set_alarm(
+            await self._eldes.eldes.set_alarm(
                 ALARM_MODES["DISARM"],
                 self.device_id,
                 self.zone_id
@@ -117,13 +125,13 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
         self._state = STATE_ALARM_DISARMED
         self.async_write_ha_state()
 
-    def alarm_arm_away(self, code=None):
+    async def async_alarm_arm_away(self, code=None):
         """Send arm away command."""
         self._state = STATE_ALARM_ARMING
         self.async_write_ha_state()
 
         try:
-            self._eldes.eldes.set_alarm(
+            await self._eldes.eldes.set_alarm(
                 ALARM_MODES["ARM_AWAY"],
                 self.device_id,
                 self.zone_id
@@ -135,13 +143,13 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
         self._state = STATE_ALARM_ARMED_AWAY
         self.async_write_ha_state()
 
-    def alarm_arm_home(self, code=None):
+    async def async_alarm_arm_home(self, code=None):
         """Send arm night command."""
         self._state = STATE_ALARM_ARMING
         self.async_write_ha_state()
 
         try:
-            self._eldes.eldes.set_alarm(
+            await self._eldes.eldes.set_alarm(
                 ALARM_MODES["ARM_HOME"],
                 self.device_id,
                 self.zone_id
@@ -162,12 +170,20 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
     @callback
     def _async_update_zone_data(self):
         """Handle update callbacks."""
-        self._zone_info = next(
-            (
-                zone for zone in self._eldes.data[self.device_id]["partitions"]
-                if zone["internalId"] == self.zone_id
-            ), None
-        )
+        try:
+            zone_info = next(
+                (
+                    zone for zone in self._eldes.data[self.device_id]["partitions"]
+                    if zone["internalId"] == self.zone_id
+                ), None
+            )
 
-        if self._zone_info is not None:
-            self._state = ALARM_STATES_MAP[self._zone_info.get("state", "DISARMED")]
+            if zone_info is not None:
+                self._state = ALARM_STATES_MAP[zone_info.get("state", "DISARMED")]
+                self._state_attributes = {
+                    "armed": zone_info.get("armed", False),
+                    "armStay": zone_info.get("armStay", False),
+                    "hasUnacceptedPartitionAlarms": zone_info.get("hasUnacceptedPartitionAlarms", False),
+                }
+        except KeyError:
+            pass

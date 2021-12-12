@@ -2,6 +2,7 @@
 from datetime import timedelta
 import logging
 import requests.exceptions
+from aiohttp import ClientSession
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
@@ -10,6 +11,7 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.dispatcher import dispatcher_send
 from homeassistant.helpers.event import async_track_time_interval
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.util import Throttle
 
 from .const import (
@@ -23,7 +25,7 @@ from .core.eldes_cloud import EldesCloud
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS = ["binary_sensor", "sensor", "alarm_control_panel", """switch"""]
+PLATFORMS = ["binary_sensor", "sensor", "alarm_control_panel", "switch"]
 
 MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=30)
 SCAN_INTERVAL = timedelta(minutes=1)
@@ -36,11 +38,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     username = entry.data[CONF_USERNAME]
     password = entry.data[CONF_PASSWORD]
+    session = async_get_clientsession(hass)
 
-    eldes_connector = EldesConnector(hass, username, password)
+    eldes_connector = EldesConnector(hass, session, username, password)
 
     try:
-        await hass.async_add_executor_job(eldes_connector.setup)
+        await eldes_connector.setup()
     except Exception as exc:
         _LOGGER.error("Failed to setup eldes: %s", exc)
         return False
@@ -53,7 +56,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         raise ConfigEntryNotReady from ex
 
     # Do first update
-    await hass.async_add_executor_job(eldes_connector.update)
+    await eldes_connector.update()
 
     # Poll for updates in the background
     update_track = async_track_time_interval(
@@ -97,9 +100,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
 class EldesConnector:
     """An object to store the Eldes data."""
 
-    def __init__(self, hass, username, password):
+    def __init__(self, hass: HomeAssistant, session: ClientSession, username: str, password: str):
         """Initialize Eldes Connector."""
         self.hass = hass
+        self._session = session
         self._username = username
         self._password = password
 
@@ -109,64 +113,73 @@ class EldesConnector:
         self.devices = None
         self.data = {}
 
-    def setup(self):
-        """Connect to Eldes and fetch the devices."""
-        self.eldes = EldesCloud(self._username, self._password)
+    async def setup(self):
+        """Connect to Eldes and fetch data."""
+        self.eldes = EldesCloud(self._session)
+
+        # Login to Eldes
+        await self.eldes.login(self._username, self._password)
 
         # Load devices
-        devices_response = self.eldes.get_devices()
+        devices_response = await self.eldes.get_devices()
         devices = devices_response.get("deviceListEntries", [])
 
         # Renew token before other requests
-        self.eldes.renew_token()
+        await self.eldes.renew_token()
 
         device = devices[0]
 
-        # Retrieve additional device info
-        device["info"] = self.eldes.get_device_info(device["imei"])
+        # Retrieve additional device data
+        device["info"] = await self.eldes.get_device_info(device["imei"])
+
+        partitions_response = await self.eldes.get_device_partitions(device["imei"])
+        device["partitions"] = partitions_response.get("partitions", [])
+
+        outputs_response = await self.eldes.get_device_outputs(device["imei"])
+        device["outputs"] = outputs_response.get("deviceOutputs", [])
 
         self.home_id = device["imei"]
         self.home_name = device["name"]
         self.devices = [device]
 
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
-    def update(self):
+    async def update(self):
         """Update token to keep session."""
-        self.eldes.renew_token()
+        await self.eldes.renew_token()
 
         """Update the registered devices."""
         for device in self.devices:
-            self.update_sensor(device["imei"])
+            await self.update_sensor(device["imei"])
 
-    def update_sensor(self, device_imei):
+    async def update_sensor(self, device_imei):
         """Update the internal data from Eldes."""
-        _LOGGER.debug("Updating %s %s", device_imei)
+        _LOGGER.debug("Updating %s", device_imei)
 
         try:
-            info = self.eldes.get_device_info(device_imei)
-            partitions = self.eldes.get_device_partitions(device_imei)
-            outputs = self.eldes.get_device_outputs(device_imei)
+            info = await self.eldes.get_device_info(device_imei)
+            partitions = await self.eldes.get_device_partitions(device_imei)
+            outputs = await self.eldes.get_device_outputs(device_imei)
+
+            self.data[device_imei] = info
+            self.data[device_imei]["partitions"] = partitions.get("partitions", [])
+            self.data[device_imei]["outputs"] = outputs.get("deviceOutputs", [])
+
+            _LOGGER.debug(
+                "Dispatching update to %s %s: %s",
+                self.home_id,
+                device_imei,
+                self.data[device_imei],
+            )
+
+            _LOGGER.error(self.data[device_imei])
+
+            dispatcher_send(
+                self.hass,
+                SIGNAL_ELDES_UPDATE_RECEIVED.format(self.home_id, device_imei),
+            )
         except RuntimeError:
             _LOGGER.error(
                 "Unable to connect to Eldes while updating %s",
                 device_imei
             )
-            return
-
-        self.data[device_imei] = info
-        self.data[device_imei]["partitions"] = partitions.get("partitions", [])
-        self.data[device_imei]["outputs"] = outputs.get("deviceOutputs", [])
-
-        _LOGGER.error(self.data[device_imei])
-
-        _LOGGER.debug(
-            "Dispatching update to %s %s %s: %s",
-            self.home_id,
-            device_imei,
-            self.data[device_imei],
-        )
-
-        dispatcher_send(
-            self.hass,
-            SIGNAL_ELDES_UPDATE_RECEIVED.format(self.home_id, device_imei),
-        )
+            pass

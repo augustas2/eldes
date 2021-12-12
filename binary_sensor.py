@@ -27,13 +27,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     entities = []
 
     # Create device sensors
-    for device in devices:
-        entities.extend(
-            [
-                EldesDeviceBinarySensor(eldes, device, variable)
-                for variable in BINARY_SENSORS
-            ]
-        )
+    try:
+        for device in devices:
+            entities.extend(
+                [
+                    EldesDeviceBinarySensor(eldes, device, variable)
+                    for variable in BINARY_SENSORS
+                ]
+            )
+    except KeyError:
+        pass
 
     if entities:
         async_add_entities(entities, True)
@@ -42,15 +45,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 class EldesDeviceBinarySensor(EldesDeviceEntity, BinarySensorEntity):
     """Representation of the Eldes binary sensor."""
 
-    def __init__(self, eldes, device_info, device_variable):
+    def __init__(self, eldes, device, device_variable):
         """Initialize of the Eldes binary sensor."""
         self._eldes = eldes
-        super().__init__(device_info)
+        super().__init__(device)
 
         self.device_variable = device_variable
-
         self._unique_id = f"{device_variable} {self.device_id} {eldes.home_id}"
-
         self._state = None
 
     async def async_added_to_hass(self):
@@ -100,9 +101,10 @@ class EldesDeviceBinarySensor(EldesDeviceEntity, BinarySensorEntity):
     def _async_update_device_data(self):
         """Handle update callbacks."""
         try:
-            self._device_info = self._eldes.data[self.device_id]
-        except KeyError:
-            return
+            device_info = self._eldes.data[self.device_id]
 
-        if self.device_variable == "connection status":
-            self._state = self._device_info.get("online", False)
+            if device_info is not None:
+                if self.device_variable == "connection status":
+                    self._state = device_info.get("online", False)
+        except KeyError:
+            pass
