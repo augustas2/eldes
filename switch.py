@@ -59,9 +59,15 @@ class EldesSwitch(EldesDeviceEntity, SwitchEntity):
             self.entity_index
         )
 
+        self.data["outputs"][self.entity_index]["outputState"] = True
+        self.async_write_ha_state()
+
     async def async_turn_off(self):
         """Turn the entity off."""
         await self.client.turn_off_output(
             self.imei,
             self.entity_index
         )
+
+        self.data["outputs"][self.entity_index]["outputState"] = False
+        self.async_write_ha_state()

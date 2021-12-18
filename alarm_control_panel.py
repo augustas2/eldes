@@ -62,7 +62,16 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
     @property
     def state(self):
         """Return the state of the alarm."""
-        return ALARM_STATES_MAP[self.data.get("state", "DISARMED")]
+        alarm_state = self.data["state"]
+
+        if alarm_state == "DISARMED":
+            return STATE_ALARM_DISARMED
+        elif alarm_state == "ARMED":
+            return STATE_ALARM_ARMED_AWAY
+        elif alarm_state == "ARMSTAY":
+            return STATE_ALARM_ARMED_HOME
+
+        return self.data.get("state", STATE_ALARM_DISARMED)
 
     @property
     def supported_features(self):
@@ -71,8 +80,8 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
 
     async def async_alarm_disarm(self, code=None):
         """Send disarm command."""
-        # self._state = STATE_ALARM_DISARMING
-        # self.async_write_ha_state()
+        self.data["state"] = STATE_ALARM_DISARMING
+        self.async_write_ha_state()
 
         await self.client.set_alarm(
             ALARM_MODES["DISARM"],
@@ -80,13 +89,13 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
             self.entity_index
         )
 
-        # self._state = STATE_ALARM_DISARMED
-        # self.async_write_ha_state()
+        self.data["state"] = STATE_ALARM_DISARMED
+        self.async_write_ha_state()
 
     async def async_alarm_arm_away(self, code=None):
         """Send arm away command."""
-        # self._state = STATE_ALARM_ARMING
-        # self.async_write_ha_state()
+        self.data["state"] = STATE_ALARM_ARMING
+        self.async_write_ha_state()
 
         await self.client.set_alarm(
             ALARM_MODES["ARM_AWAY"],
@@ -94,13 +103,13 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
             self.entity_index
         )
 
-        # self._state = STATE_ALARM_ARMED_AWAY
-        # self.async_write_ha_state()
+        self.data["state"] = STATE_ALARM_ARMED_AWAY
+        self.async_write_ha_state()
 
     async def async_alarm_arm_home(self, code=None):
         """Send arm night command."""
-        # self._state = STATE_ALARM_ARMING
-        # self.async_write_ha_state()
+        self.data["state"] = STATE_ALARM_ARMING
+        self.async_write_ha_state()
 
         await self.client.set_alarm(
             ALARM_MODES["ARM_HOME"],
@@ -108,5 +117,5 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
             self.entity_index
         )
 
-        # self._state = STATE_ALARM_ARMED_HOME
-        # self.async_write_ha_state()
+        self.data["state"] = STATE_ALARM_ARMED_HOME
+        self.async_write_ha_state()
