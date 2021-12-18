@@ -2,50 +2,49 @@
 from datetime import timedelta
 import logging
 import requests.exceptions
-from aiohttp import ClientSession
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.exceptions import ConfigEntryNotReady, ConfigEntryAuthFailed
 from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers.dispatcher import dispatcher_send
-from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.util import Throttle
+from homeassistant.helpers.update_coordinator import (
+    CoordinatorEntity,
+    DataUpdateCoordinator,
+    UpdateFailed
+)
 
 from .const import (
-    DATA,
+    DEFAULT_NAME,
+    DEFAULT_ZONE,
+    DATA_CLIENT,
+    DATA_COORDINATOR,
+    DATA_DEVICES,
     DOMAIN,
-    SIGNAL_ELDES_UPDATE_RECEIVED,
-    UPDATE_LISTENER,
-    UPDATE_TRACK,
+    SIGNAL_ELDES_UPDATE_RECEIVED
 )
 from .core.eldes_cloud import EldesCloud
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS = ["binary_sensor", "sensor", "alarm_control_panel", "switch"]
-
-MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=30)
-SCAN_INTERVAL = timedelta(minutes=1)
+PLATFORMS = ["sensor", "binary_sensor", "switch", "alarm_control_panel"]
 
 CONFIG_SCHEMA = cv.deprecated(DOMAIN)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Eldes from a config entry."""
-
     username = entry.data[CONF_USERNAME]
     password = entry.data[CONF_PASSWORD]
-    session = async_get_clientsession(hass)
 
-    eldes_connector = EldesConnector(hass, session, username, password)
+    session = async_get_clientsession(hass)
+    eldes_client = EldesCloud(session, username, password)
 
     try:
-        await eldes_connector.setup()
-    except Exception as exc:
-        _LOGGER.error("Failed to setup eldes: %s", exc)
+        await eldes_client.login()
+    except Exception as ex:
+        _LOGGER.error("Failed to setup eldes: %s", ex)
         return False
     except requests.exceptions.Timeout as ex:
         raise ConfigEntryNotReady from ex
@@ -55,131 +54,115 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             return False
         raise ConfigEntryNotReady from ex
 
-    # Do first update
-    await eldes_connector.update()
+    async def async_update_data():
+        """Fetch data from Eldes API."""
+        try:
+            devices = await eldes_client.get_devices()
 
-    # Poll for updates in the background
-    update_track = async_track_time_interval(
+            # Eldes API requires new token before other requests
+            await eldes_client.renew_token()
+
+            # Retrieve additional device info, partitions and outputs
+            for device in devices:
+                device["info"] = await eldes_client.get_device_info(device["imei"])
+                device["partitions"] = await eldes_client.get_device_partitions(device["imei"])
+                device["outputs"] = await eldes_client.get_device_outputs(device["imei"])
+
+            hass.data[DOMAIN][entry.entry_id][DATA_DEVICES] = devices
+
+            return devices
+        except RuntimeError as ex:
+            raise ConfigEntryAuthFailed("Not authenticated with Eldes API") from ex
+        except Exception as ex:
+            _LOGGER.exception(
+                "Unknown error occurred during Eldes update request: %s", ex
+            )
+            raise UpdateFailed(ex) from ex
+
+    coordinator = DataUpdateCoordinator(
         hass,
-        lambda now: eldes_connector.update(),
-        SCAN_INTERVAL,
+        _LOGGER,
+        name=DOMAIN,
+        update_method=async_update_data,
+        update_interval=timedelta(seconds=40),
     )
-
-    update_listener = entry.add_update_listener(_async_update_listener)
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {
-        DATA: eldes_connector,
-        UPDATE_TRACK: update_track,
-        UPDATE_LISTENER: update_listener,
+        DATA_CLIENT: eldes_client,
+        DATA_COORDINATOR: coordinator,
+        DATA_DEVICES: [],
     }
 
+    # Fetch initial data so we have data when entities subscribe
+    await coordinator.async_config_entry_first_refresh()
+
+    # Setup components
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
 
     return True
 
 
-async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry):
-    """Handle options update."""
-    await hass.config_entries.async_reload(entry.entry_id)
-
-
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Unload a config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-
-    hass.data[DOMAIN][entry.entry_id][UPDATE_TRACK]()
-    hass.data[DOMAIN][entry.entry_id][UPDATE_LISTENER]()
-
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
 
     return unload_ok
 
 
-class EldesConnector:
-    """An object to store the Eldes data."""
+class EldesDeviceEntity(CoordinatorEntity):
+    """Defines a base Eldes device entity."""
 
-    def __init__(self, hass: HomeAssistant, session: ClientSession, username: str, password: str):
-        """Initialize Eldes Connector."""
-        self.hass = hass
-        self._session = session
-        self._username = username
-        self._password = password
+    def __init__(self, client, coordinator, device_index, entity_index=None):
+        """Initialize the Eldes entity."""
+        super().__init__(coordinator)
+        self.client = client
+        self.device_index = device_index
+        self.entity_index = entity_index
+        self.imei = self.coordinator.data[self.device_index]["imei"]
 
-        self.home_id = None
-        self.home_name = None
-        self.eldes = None
-        self.devices = None
-        self.data = {}
+    @property
+    def data(self):
+        """Shortcut to access data for the entity."""
+        return self.coordinator.data[self.device_index]
 
-    async def setup(self):
-        """Connect to Eldes and fetch data."""
-        self.eldes = EldesCloud(self._session)
+    @property
+    def device_info(self):
+        """Return device info for the Eldes entity."""
+        return {
+            "identifiers": {(DOMAIN, self.imei)},
+            "name": self.data["info"]["model"],
+            "manufacturer": DEFAULT_NAME,
+            "sw_version": self.data["info"]["firmware"],
+            "model": self.data["info"]["model"]
+        }
 
-        # Login to Eldes
-        await self.eldes.login(self._username, self._password)
 
-        # Load devices
-        devices_response = await self.eldes.get_devices()
-        devices = devices_response.get("deviceListEntries", [])
+class EldesZoneEntity(CoordinatorEntity):
+    """Defines a base Eldes zone entity."""
 
-        # Renew token before other requests
-        await self.eldes.renew_token()
+    def __init__(self, client, coordinator, device_index, entity_index):
+        """Initialize the Eldes entity."""
+        super().__init__(coordinator)
+        self.client = client
+        self.device_index = device_index
+        self.entity_index = entity_index
+        self.imei = self.coordinator.data[self.device_index]["imei"]
 
-        device = devices[0]
+    @property
+    def data(self):
+        """Shortcut to access data for the entity."""
+        return self.coordinator.data[self.device_index]["partitions"][self.entity_index]
 
-        # Retrieve additional device data
-        device["info"] = await self.eldes.get_device_info(device["imei"])
-
-        partitions_response = await self.eldes.get_device_partitions(device["imei"])
-        device["partitions"] = partitions_response.get("partitions", [])
-
-        outputs_response = await self.eldes.get_device_outputs(device["imei"])
-        device["outputs"] = outputs_response.get("deviceOutputs", [])
-
-        self.home_id = device["imei"]
-        self.home_name = device["name"]
-        self.devices = [device]
-
-    @Throttle(MIN_TIME_BETWEEN_UPDATES)
-    async def update(self):
-        """Update token to keep session."""
-        await self.eldes.renew_token()
-
-        """Update the registered devices."""
-        for device in self.devices:
-            await self.update_sensor(device["imei"])
-
-    async def update_sensor(self, device_imei):
-        """Update the internal data from Eldes."""
-        _LOGGER.debug("Updating %s", device_imei)
-
-        try:
-            info = await self.eldes.get_device_info(device_imei)
-            partitions = await self.eldes.get_device_partitions(device_imei)
-            outputs = await self.eldes.get_device_outputs(device_imei)
-
-            self.data[device_imei] = info
-            self.data[device_imei]["partitions"] = partitions.get("partitions", [])
-            self.data[device_imei]["outputs"] = outputs.get("deviceOutputs", [])
-
-            _LOGGER.debug(
-                "Dispatching update to %s %s: %s",
-                self.home_id,
-                device_imei,
-                self.data[device_imei],
-            )
-
-            _LOGGER.error(self.data[device_imei])
-
-            dispatcher_send(
-                self.hass,
-                SIGNAL_ELDES_UPDATE_RECEIVED.format(self.home_id, device_imei),
-            )
-        except RuntimeError:
-            _LOGGER.error(
-                "Unable to connect to Eldes while updating %s",
-                device_imei
-            )
-            pass
+    @property
+    def device_info(self):
+        """Return zone info for the Eldes entity."""
+        return {
+            "identifiers": {(DOMAIN, self.data["internalId"])},
+            "name": self.data["name"],
+            "manufacturer": DEFAULT_NAME,
+            "model": DEFAULT_ZONE,
+            "suggested_area": self.data["name"]
+        }

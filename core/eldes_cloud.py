@@ -12,7 +12,7 @@ class EldesCloud:
     """Interacts with Eldes Alarm via public API."""
     timeout = 10
 
-    def __init__(self, session: ClientSession):
+    def __init__(self, session: ClientSession, username: str, password: str):
         """Performs login and save session cookie."""
         # HTTPS Interface
         self.headers = {
@@ -23,6 +23,8 @@ class EldesCloud:
         self.refresh_at = datetime.datetime.now() + datetime.timedelta(minutes=3)
 
         self._http_session = session
+        self._username = username
+        self._password = password
 
     def _setOAuthHeader(self, data):
         # expires_in = float(data['expires_in'])
@@ -53,10 +55,10 @@ class EldesCloud:
 
         return response
 
-    async def login(self, username, password):
+    async def login(self):
         data = {
-            'email': username,
-            'password': password,
+            'email': self._username,
+            'password': self._password,
             'hostDeviceId': ''
         }
 
@@ -102,13 +104,14 @@ class EldesCloud:
 
         response = await self._api_call(url, "GET")
         result = await response.json()
+        devices = result.get("deviceListEntries", [])
 
         _LOGGER.debug(
             "get_devices result: %s",
-            result
+            devices
         )
 
-        return result
+        return devices
 
     async def get_device_info(self, imei):
         """Gets device information."""
@@ -134,13 +137,14 @@ class EldesCloud:
 
         response = await self._api_call(url, "POST", data)
         result = await response.json()
+        partitions = result.get("partitions", [])
 
         _LOGGER.debug(
             "get_device_partitions result: %s",
-            result
+            partitions
         )
 
-        return result
+        return partitions
 
     async def get_device_outputs(self, imei):
         """Gets device outputs/automations."""
@@ -152,13 +156,14 @@ class EldesCloud:
 
         response = await self._api_call(url, "POST", data)
         result = await response.json()
+        outputs = result.get("deviceOutputs", [])
 
         _LOGGER.debug(
             "get_device_outputs result: %s",
-            result
+            outputs
         )
 
-        return result
+        return outputs
 
     async def set_alarm(self, mode, imei, zone_id):
         """Sets alarm to given mode."""

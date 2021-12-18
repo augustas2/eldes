@@ -6,9 +6,9 @@ DEFAULT_NAME = "Eldes"
 DEFAULT_ZONE = "Zone"
 
 SIGNAL_ELDES_UPDATE_RECEIVED = "eldes_update_received_{}_{}"
-UPDATE_LISTENER = "update_listener"
-DATA = "data"
-UPDATE_TRACK = "update_track"
+DATA_CLIENT = "eldes_client"
+DATA_COORDINATOR = "coordinator"
+DATA_DEVICES = "devices"
 UNIQUE_ID = "unique_id"
 
 # API
