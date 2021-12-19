@@ -4,6 +4,7 @@ import logging
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.const import PERCENTAGE
 
 from .const import (
     DATA_CLIENT,
@@ -75,6 +76,11 @@ class EldesGSMStrengthSensor(EldesDeviceEntity, SensorEntity):
         if self.data["info"]["gsmStrength"] == 0:
             return "mdi:signal-off"
         return "mdi:signal"
+
+    @property
+    def native_unit_of_measurement(self):
+        """Return the unit of measurement."""
+        return PERCENTAGE
 
     @property
     def native_value(self):
