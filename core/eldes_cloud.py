@@ -2,10 +2,21 @@
 import logging
 import datetime
 from aiohttp import ClientSession
+from homeassistant.const import (
+    STATE_ALARM_ARMED_AWAY,
+    STATE_ALARM_ARMED_HOME,
+    STATE_ALARM_DISARMED
+)
 
 from ..const import API_URL, API_PATHS
 
 _LOGGER = logging.getLogger(__name__)
+
+ALARM_STATES_MAP = {
+    "DISARMED": STATE_ALARM_DISARMED,
+    "ARMED": STATE_ALARM_ARMED_AWAY,
+    "ARMSTAY": STATE_ALARM_ARMED_HOME
+}
 
 
 class EldesCloud:
@@ -138,6 +149,10 @@ class EldesCloud:
         response = await self._api_call(url, "POST", data)
         result = await response.json()
         partitions = result.get("partitions", [])
+
+        # Replace Eldes state with HA state name
+        for partitionIndex, _ in enumerate(partitions):
+            partitions[partitionIndex]["state"] = ALARM_STATES_MAP[partitions[partitionIndex].get("state", STATE_ALARM_DISARMED)]
 
         _LOGGER.debug(
             "get_device_partitions result: %s",

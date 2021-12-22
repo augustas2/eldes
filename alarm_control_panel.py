@@ -26,12 +26,6 @@ from . import EldesZoneEntity
 
 _LOGGER = logging.getLogger(__name__)
 
-ALARM_STATES_MAP = {
-    "DISARMED": STATE_ALARM_DISARMED,
-    "ARMED": STATE_ALARM_ARMED_AWAY,
-    "ARMSTAY": STATE_ALARM_ARMED_HOME
-}
-
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
     """Set up the Eldes sensor platform."""
@@ -62,16 +56,17 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
     @property
     def state(self):
         """Return the state of the alarm."""
-        alarm_state = self.data["state"]
+        return self.data["state"]
 
-        if alarm_state == "DISARMED":
-            return STATE_ALARM_DISARMED
-        elif alarm_state == "ARMED":
-            return STATE_ALARM_ARMED_AWAY
-        elif alarm_state == "ARMSTAY":
-            return STATE_ALARM_ARMED_HOME
-
-        return self.data.get("state", STATE_ALARM_DISARMED)
+    @property
+    def extra_state_attributes(self):
+        """Return the state attributes."""
+        return {
+            "armed": self.data["armed"],
+            "armStay": self.data["armStay"],
+            "state": self.data["state"],
+            "hasUnacceptedPartitionAlarms": self.data["hasUnacceptedPartitionAlarms"]
+        }
 
     @property
     def supported_features(self):
