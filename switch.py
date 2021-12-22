@@ -48,6 +48,17 @@ class EldesSwitch(EldesDeviceEntity, SwitchEntity):
         return self.data["outputs"][self.entity_index].get("outputState", False)
 
     @property
+    def extra_state_attributes(self):
+        """Return the state attributes."""
+        output = self.data["outputs"][self.entity_index]
+
+        return {
+            "hasFault": output["hasFault"],
+            "outputState": output["outputState"],
+            "type": output["type"]
+        }
+
+    @property
     def icon(self):
         """Return the icon of this sensor."""
         return OUTPUT_ICONS_MAP[self.data["outputs"][self.entity_index].get("iconName", "ICON_1")]

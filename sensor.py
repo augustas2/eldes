@@ -27,6 +27,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     for index, _ in enumerate(coordinator.data):
         entities.append(EldesBatteryStatusSensor(client, coordinator, index))
         entities.append(EldesGSMStrengthSensor(client, coordinator, index))
+        entities.append(EldesPhoneNumberSensor(client, coordinator, index))
 
     async_add_entities(entities)
 
@@ -86,3 +87,27 @@ class EldesGSMStrengthSensor(EldesDeviceEntity, SensorEntity):
     def native_value(self):
         """Return the state of the sensor."""
         return SIGNAL_STRENGTH_MAP[self.data["info"].get("gsmStrength", 0)]
+
+
+class EldesPhoneNumberSensor(EldesDeviceEntity, SensorEntity):
+    """Class for the phone number sensor."""
+
+    @property
+    def unique_id(self):
+        """Return a unique identifier for this entity."""
+        return f"{self.imei}_phone_number"
+
+    @property
+    def name(self):
+        """Return the name of the sensor."""
+        return f"{self.data['info']['model']} Phone Number"
+
+    @property
+    def icon(self):
+        """Return the icon of this sensor."""
+        return "mdi:cellphone"
+
+    @property
+    def native_value(self):
+        """Return the state of the sensor."""
+        return self.data["info"].get("phoneNumber", "")
