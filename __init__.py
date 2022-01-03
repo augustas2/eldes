@@ -21,8 +21,7 @@ from .const import (
     DATA_CLIENT,
     DATA_COORDINATOR,
     DATA_DEVICES,
-    DOMAIN,
-    SIGNAL_ELDES_UPDATE_RECEIVED
+    DOMAIN
 )
 from .core.eldes_cloud import EldesCloud
 

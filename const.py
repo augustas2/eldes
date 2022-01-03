@@ -1,33 +1,26 @@
 """Constant values for the Eldes component."""
 
-# General
 DOMAIN = "eldes"
 DEFAULT_NAME = "Eldes"
 DEFAULT_ZONE = "Zone"
 
-SIGNAL_ELDES_UPDATE_RECEIVED = "eldes_update_received_{}_{}"
 DATA_CLIENT = "eldes_client"
 DATA_COORDINATOR = "coordinator"
 DATA_DEVICES = "devices"
-UNIQUE_ID = "unique_id"
 
-# API
 API_URL = "https://cloud.eldesalarms.com:8083/api/"
 
-# Endpoints
 API_PATHS = {
     "AUTH": "auth/",
     "DEVICE": "device/"
 }
 
-# Alarm modes
 ALARM_MODES = {
     "DISARM": "disarm",
     "ARM_AWAY": "arm",
     "ARM_HOME": "armstay"
 }
 
-# Output types
 OUTPUT_TYPES = {
     "SWITCH": "SWITCH"
 }
@@ -39,27 +32,12 @@ OUTPUT_ICONS_MAP = {
     "ICON_3": "mdi:power-plug",
 }
 
-BINARY_SENSORS = [
-    "connection status"
-]
-
-DEVICE_SENSORS = [
-    "battery status",
-    "GSM strength",
-    "phone number"
-]
-
 SIGNAL_STRENGTH_MAP = {
     0: 0,
     1: 30,
     2: 60,
     3: 80,
     4: 100
-}
-
-BOOLEAN_MAP = {
-    True: "Yes",
-    False: "No"
 }
 
 BATTERY_STATUS_MAP = {

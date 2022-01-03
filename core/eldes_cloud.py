@@ -21,39 +21,28 @@ ALARM_STATES_MAP = {
 
 class EldesCloud:
     """Interacts with Eldes Alarm via public API."""
-    timeout = 10
 
     def __init__(self, session: ClientSession, username: str, password: str):
         """Performs login and save session cookie."""
-        # HTTPS Interface
+        self.timeout = 15
         self.headers = {
             'X-Requested-With': 'XMLHttpRequest',
             'x-whitelable': 'eldes'
         }
         self.refresh_token = ''
-        self.refresh_at = datetime.datetime.now() + datetime.timedelta(minutes=3)
 
         self._http_session = session
         self._username = username
         self._password = password
 
-    def _setOAuthHeader(self, data):
-        # expires_in = float(data['expires_in'])
-        expires_in = 120  # 2 minutes in seconds
-
+    async def _setOAuthHeader(self, data):
         if 'refreshToken' in data:
             self.refresh_token = data['refreshToken']
 
-        if expires_in is not None:
-            self.refresh_at = datetime.datetime.now()
-            self.refresh_at = self.refresh_at + datetime.timedelta(seconds=expires_in)
-
-            # we substract 30 seconds from the correct refresh time
-            # then we have a 30 seconds timespan to get a new refresh_token
-            self.refresh_at = self.refresh_at + datetime.timedelta(seconds=-30)
-
         if 'token' in data:
-            self.headers['Authorization'] = 'Bearer ' + data['token']
+            self.headers['Authorization'] = f"Bearer {data['token']}"
+
+        return data
 
     async def _api_call(self, url, method, data=None):
         response = await self._http_session.request(
@@ -83,7 +72,7 @@ class EldesCloud:
             result
         )
 
-        self._setOAuthHeader(result)
+        return await self._setOAuthHeader(result)
 
     async def renew_token(self):
         """Updates auth token."""
@@ -105,9 +94,7 @@ class EldesCloud:
             result
         )
 
-        self._setOAuthHeader(result)
-
-        return result
+        return await self._setOAuthHeader(result)
 
     async def get_devices(self):
         """Gets device list."""
