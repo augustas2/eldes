@@ -2,7 +2,7 @@
   "domain": "eldes",
   "name": "Eldes Alarms",
   "config_flow": true,
-  "documentation": "https://github.com/augustas2/eldes/blob/main/README.md",
+  "documentation": "https://github.com/augustas2/eldes/blob/master/README.md",
   "issue_tracker": "https://github.com/augustas2/eldes/issues",
   "codeowners": ["@augustas2"],
   "dependencies": ["http"],

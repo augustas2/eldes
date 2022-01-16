@@ -20,4 +20,4 @@ You have two possibilities for installation:
 
 - ESIM364
 - ESIM384
-- Pitbull Alarm Pro
+- Pitbull Alarm PRO
