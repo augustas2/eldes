@@ -1,6 +1,9 @@
 """Adds config flow for Eldes Alarms."""
 import logging
+import asyncio
+import aiohttp
 import voluptuous as vol
+from http import HTTPStatus
 
 from homeassistant import config_entries, core, exceptions
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -44,12 +47,11 @@ class EldesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             try:
                 await eldes_client.login()
-            except CannotConnect:
-                errors["base"] = "cannot_connect"
-            except InvalidAuth:
-                errors["base"] = "invalid_auth"
-            except NoHomes:
-                errors["base"] = "no_homes"
+            except (asyncio.TimeoutError, aiohttp.ClientError) as err:
+                if err.status == HTTPStatus.UNAUTHORIZED:
+                    errors["base"] = "invalid_auth"
+                else:
+                    errors["base"] = "cannot_connect"
             except Exception:
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
@@ -70,15 +72,3 @@ class EldesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="user", data_schema=DATA_SCHEMA, errors=errors
         )
-
-
-class CannotConnect(exceptions.HomeAssistantError):
-    """Error to indicate we cannot connect."""
-
-
-class InvalidAuth(exceptions.HomeAssistantError):
-    """Error to indicate there is invalid auth."""
-
-
-class NoHomes(exceptions.HomeAssistantError):
-    """Error to indicate the account has no homes."""

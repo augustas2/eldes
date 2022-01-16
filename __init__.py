@@ -1,7 +1,8 @@
 """Support for the Eldes API."""
 from datetime import timedelta
 import logging
-import requests.exceptions
+import asyncio
+import aiohttp
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
@@ -42,16 +43,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     try:
         await eldes_client.login()
-    except Exception as ex:
-        _LOGGER.error("Failed to setup eldes: %s", ex)
-        return False
-    except requests.exceptions.Timeout as ex:
-        raise ConfigEntryNotReady from ex
-    except requests.exceptions.HTTPError as ex:
-        if ex.response.status_code > 400 and ex.response.status_code < 500:
-            _LOGGER.error("Failed to login to eldes: %s", ex)
+    except (asyncio.TimeoutError, aiohttp.ClientError) as ex:
+        if err.status == HTTPStatus.UNAUTHORIZED:
             return False
+
         raise ConfigEntryNotReady from ex
+    except Exception as ex:
+        _LOGGER.error("Failed to setup Eldes: %s", ex)
+        return False
 
     async def async_update_data():
         """Fetch data from Eldes API."""

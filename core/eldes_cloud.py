@@ -1,7 +1,10 @@
 """Implementation for Eldes Cloud"""
+import asyncio
+import async_timeout
 import logging
 import datetime
-from aiohttp import ClientSession
+import aiohttp
+from http import HTTPStatus
 from homeassistant.const import (
     STATE_ALARM_ARMED_AWAY,
     STATE_ALARM_ARMED_HOME,
@@ -22,9 +25,9 @@ ALARM_STATES_MAP = {
 class EldesCloud:
     """Interacts with Eldes Alarm via public API."""
 
-    def __init__(self, session: ClientSession, username: str, password: str):
+    def __init__(self, session: aiohttp.ClientSession, username: str, password: str):
         """Performs login and save session cookie."""
-        self.timeout = 15
+        self.timeout = 10
         self.headers = {
             'X-Requested-With': 'XMLHttpRequest',
             'x-whitelable': 'eldes'
@@ -45,15 +48,24 @@ class EldesCloud:
         return data
 
     async def _api_call(self, url, method, data=None):
-        response = await self._http_session.request(
-            method,
-            url,
-            timeout=self.timeout,
-            json=data,
-            headers=self.headers
-        )
+        try:
+            async with async_timeout.timeout(self.timeout):
+                req = await self._http_session.request(
+                    method,
+                    url,
+                    json=data,
+                    headers=self.headers
+                )
+            req.raise_for_status()
+            return req
 
-        return response
+        except aiohttp.ClientError as err:
+            _LOGGER.error("Client error on API %s request %s", url, err)
+            raise
+
+        except asyncio.TimeoutError:
+            _LOGGER.error("Client timeout error on API request %s", url)
+            raise
 
     async def login(self):
         data = {
@@ -64,8 +76,8 @@ class EldesCloud:
 
         url = f"{API_URL}{API_PATHS['AUTH']}login"
 
-        response = await self._api_call(url, "POST", data)
-        result = await response.json()
+        resp = await self._api_call(url, "POST", data)
+        result = await resp.json()
 
         _LOGGER.debug(
             "login result: %s",
@@ -86,7 +98,6 @@ class EldesCloud:
             timeout=self.timeout,
             headers=headers
         )
-
         result = await response.json()
 
         _LOGGER.debug(
