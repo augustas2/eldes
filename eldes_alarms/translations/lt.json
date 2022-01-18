@@ -15,5 +15,16 @@
       "invalid_auth": "Neteisingas el. pašto adresas arba slaptažodis.",
       "unknown": "Nežinoma klaida."
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Eldes integracijos nustatymai",
+        "description": "Pakeiskite atnaujinimo intervalą, norėdami dažniau arba rečiau atnaujinti duomenis.",
+        "data": {
+          "scan_interval": "Atnaujinimo intervalas (sekundės)"
+        }
+      }
+    }
   }
 }

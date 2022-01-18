@@ -7,7 +7,7 @@ from http import HTTPStatus
 
 from homeassistant import config_entries, core, exceptions
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
+from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, CONF_SCAN_INTERVAL
 
 from .core.eldes_cloud import EldesCloud
 from .const import DOMAIN
@@ -72,3 +72,31 @@ class EldesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="user", data_schema=DATA_SCHEMA, errors=errors
         )
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        """Get the options flow for this handler."""
+        return OptionsFlowHandler(config_entry)
+
+
+class OptionsFlowHandler(config_entries.OptionsFlow):
+    """Handle a option flow for Eldes."""
+
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        """Initialize options flow."""
+        self.config_entry = config_entry
+
+    async def async_step_init(self, user_input=None):
+        """Handle options flow."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        data_schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_SCAN_INTERVAL, default=self.config_entry.options.get(CONF_SCAN_INTERVAL)
+                ): int,
+            }
+        )
+        return self.async_show_form(step_id="init", data_schema=data_schema)

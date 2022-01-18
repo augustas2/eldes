@@ -5,7 +5,7 @@ import asyncio
 import aiohttp
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
+from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, CONF_SCAN_INTERVAL
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady, ConfigEntryAuthFailed
 from homeassistant.helpers import config_validation as cv
@@ -22,7 +22,6 @@ from .const import (
     DATA_CLIENT,
     DATA_COORDINATOR,
     DATA_DEVICES,
-    CONF_SCAN_INTERVAL,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN
 )
@@ -39,7 +38,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Eldes from a config entry."""
     username = entry.data[CONF_USERNAME]
     password = entry.data[CONF_PASSWORD]
-    update_interval = entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+    scan_interval = entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
 
     session = async_get_clientsession(hass)
     eldes_client = EldesCloud(session, username, password)
@@ -84,7 +83,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         _LOGGER,
         name=DOMAIN,
         update_method=async_update_data,
-        update_interval=timedelta(seconds=update_interval),
+        update_interval=timedelta(seconds=scan_interval),
     )
 
     hass.data.setdefault(DOMAIN, {})

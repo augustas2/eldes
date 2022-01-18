@@ -15,5 +15,16 @@
       "invalid_auth": "Email or password is incorrect.",
       "unknown": "Unknown error."
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Configure Eldes integration",
+        "description": "Update the scan interval to poll for data more often.",
+        "data": {
+          "scan_interval": "Scan Interval (seconds)"
+        }
+      }
+    }
   }
 }

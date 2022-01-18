@@ -8,7 +8,6 @@ DATA_CLIENT = "eldes_client"
 DATA_COORDINATOR = "coordinator"
 DATA_DEVICES = "devices"
 
-CONF_SCAN_INTERVAL = "polling_interval"
 DEFAULT_SCAN_INTERVAL = 20
 
 API_URL = "https://cloud.eldesalarms.com:8083/api/"
