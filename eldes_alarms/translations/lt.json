@@ -1,0 +1,19 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Eldes Cloud Service",
+        "description": "Prašome prisijungti prie savo Eldes cloud services paskyros.",
+        "data": {
+          "username": "El. pašto adresas",
+          "password": "Slaptažodis"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Prisijungti nepavyko. Pabandykite dar kartą vėliau.",
+      "invalid_auth": "Neteisingas el. pašto adresas arba slaptažodis.",
+      "unknown": "Nežinoma klaida."
+    }
+  }
+}

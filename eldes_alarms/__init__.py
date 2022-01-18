@@ -22,6 +22,8 @@ from .const import (
     DATA_CLIENT,
     DATA_COORDINATOR,
     DATA_DEVICES,
+    CONF_SCAN_INTERVAL,
+    DEFAULT_SCAN_INTERVAL,
     DOMAIN
 )
 from .core.eldes_cloud import EldesCloud
@@ -37,6 +39,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Eldes from a config entry."""
     username = entry.data[CONF_USERNAME]
     password = entry.data[CONF_PASSWORD]
+    update_interval = entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
 
     session = async_get_clientsession(hass)
     eldes_client = EldesCloud(session, username, password)
@@ -46,6 +49,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     except (asyncio.TimeoutError, aiohttp.ClientError) as ex:
         if err.status == HTTPStatus.UNAUTHORIZED:
             return False
+            raise ConfigEntryAuthFailed from ex
 
         raise ConfigEntryNotReady from ex
     except Exception as ex:
@@ -69,8 +73,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             hass.data[DOMAIN][entry.entry_id][DATA_DEVICES] = devices
 
             return devices
-        except RuntimeError as ex:
-            raise ConfigEntryAuthFailed("Not authenticated with Eldes API") from ex
         except Exception as ex:
             _LOGGER.exception(
                 "Unknown error occurred during Eldes update request: %s", ex
@@ -82,7 +84,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         _LOGGER,
         name=DOMAIN,
         update_method=async_update_data,
-        update_interval=timedelta(seconds=40),
+        update_interval=timedelta(seconds=update_interval),
     )
 
     hass.data.setdefault(DOMAIN, {})
