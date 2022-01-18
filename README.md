@@ -16,8 +16,8 @@ You have two possibilities for installation:
 - Copy "eldes_alarms" folder to the "/config/custom_components" folder.
 - Restart HA server.
 
-### Supported devices
+## Supported devices
 
-- ESIM364
-- ESIM384
-- Pitbull Alarm PRO
+- [ESIM364](https://eldesalarms.com/product/esim364)
+- [ESIM384](https://eldesalarms.com/product/esim384)
+- [Pitbull Alarm PRO](https://eldesalarms.com/product/pitbull-pro/3g)
