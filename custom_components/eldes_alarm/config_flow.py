@@ -1,4 +1,4 @@
-"""Adds config flow for Eldes Alarms."""
+"""Adds config flow for Eldes."""
 import logging
 import asyncio
 import aiohttp

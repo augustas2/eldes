@@ -23,7 +23,7 @@ ALARM_STATES_MAP = {
 
 
 class EldesCloud:
-    """Interacts with Eldes Alarm via public API."""
+    """Interacts with Eldes via public API."""
 
     def __init__(self, session: aiohttp.ClientSession, username: str, password: str):
         """Performs login and save session cookie."""

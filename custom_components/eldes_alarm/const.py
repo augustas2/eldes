@@ -1,6 +1,6 @@
 """Constant values for the Eldes component."""
 
-DOMAIN = "eldes"
+DOMAIN = "eldes_alarm"
 DEFAULT_NAME = "Eldes"
 DEFAULT_ZONE = "Zone"
 
@@ -8,7 +8,7 @@ DATA_CLIENT = "eldes_client"
 DATA_COORDINATOR = "coordinator"
 DATA_DEVICES = "devices"
 
-DEFAULT_SCAN_INTERVAL = 20
+DEFAULT_SCAN_INTERVAL = 30
 
 API_URL = "https://cloud.eldesalarms.com:8083/api/"
 
