@@ -179,7 +179,7 @@ class EldesCloud:
         return outputs
 
     async def set_alarm(self, mode, imei, zone_id):
-        """Sets alarm to given mode."""
+        """Sets alarm to provided mode."""
         data = {
             'imei': imei,
             'partitionIndex': zone_id
@@ -214,7 +214,7 @@ class EldesCloud:
         return response
 
     async def turn_off_output(self, imei, output_id):
-        """Turns on output."""
+        """Turns off output."""
         data = {
             "": ""
         }
