@@ -1,0 +1,10 @@
+{
+  "name": "Eldes Alarm",
+  "domains": [
+    "alarm_control_panel",
+    "binary_sensor",
+    "sensor",
+    "switch"
+  ],
+  "render_readme": true
+}
