@@ -1,17 +1,23 @@
-name: Validate
+name: Validate Eldes Alarm
 
 on:
   push:
+    branches: [ master ]
   pull_request:
-  schedule:
-    - cron: "0 0 * * *"
+    branches: [ master ]
 
 jobs:
   validate:
     runs-on: "ubuntu-latest"
+    name: Validate HACS and Hassfest
     steps:
-      - uses: "actions/checkout@v2"
-      - name: HACS validation
-        uses: "hacs/action@main"
-        with:
-          category: "integration"
+        - uses: "actions/checkout@v2"
+
+        - name: HACS validation
+          uses: "hacs/action@main"
+          with:
+            category: "integration"
+
+        - name: Hassfest validation
+          uses: "home-assistant/actions/hassfest@master"
+          
