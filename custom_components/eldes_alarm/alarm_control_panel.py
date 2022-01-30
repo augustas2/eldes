@@ -75,42 +75,63 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
 
     async def async_alarm_disarm(self, code=None):
         """Send disarm command."""
+        current_state = self.data["state"]
+
         self.data["state"] = STATE_ALARM_DISARMING
         self.async_write_ha_state()
 
-        await self.client.set_alarm(
-            ALARM_MODES["DISARM"],
-            self.imei,
-            self.entity_index
-        )
+        try:
+            await self.client.set_alarm(
+                ALARM_MODES["DISARM"],
+                self.imei,
+                self.entity_index
+            )
 
-        self.data["state"] = STATE_ALARM_DISARMED
-        self.async_write_ha_state()
+            self.data["state"] = STATE_ALARM_DISARMED
+            self.async_write_ha_state()
+        except Exception as ex:
+            _LOGGER.error("Failed to change state: %s", ex)
+            self.data["state"] = current_state
+            self.async_write_ha_state()
 
     async def async_alarm_arm_away(self, code=None):
         """Send arm away command."""
+        current_state = self.data["state"]
+
         self.data["state"] = STATE_ALARM_ARMING
         self.async_write_ha_state()
 
-        await self.client.set_alarm(
-            ALARM_MODES["ARM_AWAY"],
-            self.imei,
-            self.entity_index
-        )
+        try:
+            await self.client.set_alarm(
+                ALARM_MODES["ARM_AWAY"],
+                self.imei,
+                self.entity_index
+            )
 
-        self.data["state"] = STATE_ALARM_ARMED_AWAY
-        self.async_write_ha_state()
+            self.data["state"] = STATE_ALARM_ARMED_AWAY
+            self.async_write_ha_state()
+        except Exception as ex:
+            _LOGGER.error("Failed to change state: %s", ex)
+            self.data["state"] = current_state
+            self.async_write_ha_state()
 
     async def async_alarm_arm_home(self, code=None):
         """Send arm night command."""
+        current_state = self.data["state"]
+
         self.data["state"] = STATE_ALARM_ARMING
         self.async_write_ha_state()
 
-        await self.client.set_alarm(
-            ALARM_MODES["ARM_HOME"],
-            self.imei,
-            self.entity_index
-        )
+        try:
+            await self.client.set_alarm(
+                ALARM_MODES["ARM_HOME"],
+                self.imei,
+                self.entity_index
+            )
 
-        self.data["state"] = STATE_ALARM_ARMED_HOME
-        self.async_write_ha_state()
+            self.data["state"] = STATE_ALARM_ARMED_HOME
+            self.async_write_ha_state()
+        except Exception as ex:
+            _LOGGER.error("Failed to change state: %s", ex)
+            self.data["state"] = current_state
+            self.async_write_ha_state()
