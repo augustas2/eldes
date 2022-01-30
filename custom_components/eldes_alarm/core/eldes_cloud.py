@@ -188,13 +188,14 @@ class EldesCloud:
         url = f"{API_URL}{API_PATHS['DEVICE']}action/{mode}"
 
         response = await self._api_call(url, "POST", data)
+        result = await response.text()
 
         _LOGGER.debug(
-            "set_alarm response: %s",
-            response
+            "set_alarm result: %s",
+            result
         )
 
-        return response
+        return result
 
     async def turn_on_output(self, imei, output_id):
         """Turns on output."""

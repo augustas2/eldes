@@ -1,4 +1,4 @@
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
+[![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://github.com/hacs/integration)
 
 # Eldes Alarm
 
@@ -10,8 +10,7 @@ You have two options for installation:
 
 ### HACS
 
-- Go to HACS, click on Integrations, click on the three little dots at top of the screen and select "custom repositories", add this github url, select "Integration" as repository, and click ADD.
-- Go to the Integrations tab of HACS, and install the "Eldes Alarm" integration.
+- In the [HACS](https://hacs.xyz) panel, go to integrations and click the big orange '+' button. Search for 'Eldes Alarm' and click \'Download this repository with HACS'.
 
 ### Manually
 
