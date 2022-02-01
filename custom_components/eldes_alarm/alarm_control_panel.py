@@ -87,8 +87,8 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
                 self.entity_index
             )
 
-            self.data["state"] = STATE_ALARM_DISARMED
-            self.async_write_ha_state()
+ #           self.data["state"] = STATE_ALARM_DISARMED
+ #           self.async_write_ha_state()
         except Exception as ex:
             _LOGGER.error("Failed to change state: %s", ex)
             self.data["state"] = current_state
@@ -108,8 +108,8 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
                 self.entity_index
             )
 
-            self.data["state"] = STATE_ALARM_ARMED_AWAY
-            self.async_write_ha_state()
+#            self.data["state"] = STATE_ALARM_ARMED_AWAY
+#            self.async_write_ha_state()
         except Exception as ex:
             _LOGGER.error("Failed to change state: %s", ex)
             self.data["state"] = current_state
@@ -129,8 +129,8 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
                 self.entity_index
             )
 
-            self.data["state"] = STATE_ALARM_ARMED_HOME
-            self.async_write_ha_state()
+#            self.data["state"] = STATE_ALARM_ARMED_HOME
+#            self.async_write_ha_state()
         except Exception as ex:
             _LOGGER.error("Failed to change state: %s", ex)
             self.data["state"] = current_state
