@@ -2,9 +2,8 @@
 import asyncio
 import async_timeout
 import logging
-import datetime
 import aiohttp
-from http import HTTPStatus
+
 from homeassistant.const import (
     STATE_ALARM_ARMED_AWAY,
     STATE_ALARM_ARMED_HOME,
