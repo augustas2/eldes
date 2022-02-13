@@ -81,14 +81,12 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
         self.async_write_ha_state()
 
         try:
+            await self.client.renew_token()
             await self.client.set_alarm(
                 ALARM_MODES["DISARM"],
                 self.imei,
                 self.entity_index
             )
-
-            self.data["state"] = STATE_ALARM_DISARMED
-            self.async_write_ha_state()
         except Exception as ex:
             _LOGGER.error("Failed to change state: %s", ex)
             self.data["state"] = current_state
@@ -102,14 +100,12 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
         self.async_write_ha_state()
 
         try:
+            await self.client.renew_token()
             await self.client.set_alarm(
                 ALARM_MODES["ARM_AWAY"],
                 self.imei,
                 self.entity_index
             )
-
-            self.data["state"] = STATE_ALARM_ARMED_AWAY
-            self.async_write_ha_state()
         except Exception as ex:
             _LOGGER.error("Failed to change state: %s", ex)
             self.data["state"] = current_state
@@ -123,14 +119,12 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
         self.async_write_ha_state()
 
         try:
+            await self.client.renew_token()
             await self.client.set_alarm(
                 ALARM_MODES["ARM_HOME"],
                 self.imei,
                 self.entity_index
             )
-
-            self.data["state"] = STATE_ALARM_ARMED_HOME
-            self.async_write_ha_state()
         except Exception as ex:
             _LOGGER.error("Failed to change state: %s", ex)
             self.data["state"] = current_state
