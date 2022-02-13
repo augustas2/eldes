@@ -2,6 +2,8 @@
 from datetime import timedelta
 import logging
 import asyncio
+from http import HTTPStatus
+
 import aiohttp
 
 from homeassistant.config_entries import ConfigEntry
@@ -46,8 +48,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     try:
         await eldes_client.login()
     except (asyncio.TimeoutError, aiohttp.ClientError) as ex:
-        if err.status == HTTPStatus.UNAUTHORIZED:
-            return False
+        if ex.status == HTTPStatus.UNAUTHORIZED:
             raise ConfigEntryAuthFailed from ex
 
         raise ConfigEntryNotReady from ex
@@ -56,26 +57,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         return False
 
     async def async_update_data():
-        """Fetch data from Eldes API."""
         try:
-            devices = await eldes_client.get_devices()
+            return await async_get_devices(hass, entry, eldes_client)
+        except:
+            pass
 
-            # Eldes API requires new token before other requests
-            await eldes_client.renew_token()
-
-            # Retrieve additional device info, partitions and outputs
-            for device in devices:
-                device["info"] = await eldes_client.get_device_info(device["imei"])
-                device["partitions"] = await eldes_client.get_device_partitions(device["imei"])
-                device["outputs"] = await eldes_client.get_device_outputs(device["imei"])
-
-            hass.data[DOMAIN][entry.entry_id][DATA_DEVICES] = devices
-
-            return devices
+        try:
+            await eldes_client.login()
+            return await async_get_devices(hass, entry, eldes_client)
         except Exception as ex:
-            _LOGGER.exception(
-                "Unknown error occurred during Eldes update request: %s", ex
-            )
+            _LOGGER.exception("Unknown error occurred during Eldes update request: %s", ex)
             raise UpdateFailed(ex) from ex
 
     coordinator = DataUpdateCoordinator(
@@ -100,6 +91,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
 
     return True
+
+
+async def async_get_devices(hass: HomeAssistant, entry: ConfigEntry, eldes_client: EldesCloud):
+    """Fetch data from Eldes API."""
+
+    await eldes_client.renew_token()
+
+    devices = await eldes_client.get_devices()
+
+    # Retrieve additional device info, partitions and outputs
+    for device in devices:
+        device["info"] = await eldes_client.get_device_info(device["imei"])
+        device["partitions"] = await eldes_client.get_device_partitions(device["imei"])
+        device["outputs"] = await eldes_client.get_device_outputs(device["imei"])
+
+    hass.data[DOMAIN][entry.entry_id][DATA_DEVICES] = devices
+
+    return devices
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
