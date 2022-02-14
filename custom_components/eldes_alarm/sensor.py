@@ -4,7 +4,7 @@ import logging
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.const import PERCENTAGE, TEMP_CELSIUS
+from homeassistant.const import PERCENTAGE, DEVICE_CLASS_TEMPERATURE
 
 from .const import (
     DATA_CLIENT,
@@ -129,14 +129,8 @@ class EldesTemperatureSensor(EldesDeviceEntity, SensorEntity):
         return f"{self.__get_temp()['sensorName']} temperature"
 
     @property
-    def icon(self):
-        """Return the icon of this sensor."""
-        return "mdi:thermometer"
-
-    @property
-    def native_unit_of_measurement(self):
-        """Return the unit of measurement."""
-        return TEMP_CELSIUS
+    def device_class(self):
+        return DEVICE_CLASS_TEMPERATURE
 
     @property
     def native_value(self):
