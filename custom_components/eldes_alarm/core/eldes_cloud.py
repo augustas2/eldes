@@ -234,7 +234,7 @@ class EldesCloud:
         """Gets device information."""
         url = f"{API_URL}{API_PATHS['DEVICE']}temperatures?imei={imei}"
 
-        response = await self._api_call(url, "GET")
+        response = await self._api_call(url, "POST", {})
         result = await response.json()
         temperatures = result.get("temperatureDetailsList", [])
 
