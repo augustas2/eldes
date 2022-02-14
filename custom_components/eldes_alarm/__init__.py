@@ -105,6 +105,7 @@ async def async_get_devices(hass: HomeAssistant, entry: ConfigEntry, eldes_clien
         device["info"] = await eldes_client.get_device_info(device["imei"])
         device["partitions"] = await eldes_client.get_device_partitions(device["imei"])
         device["outputs"] = await eldes_client.get_device_outputs(device["imei"])
+        device["temp"] = await eldes_client.get_temperatures(device["imei"])
 
     hass.data[DOMAIN][entry.entry_id][DATA_DEVICES] = devices
 
