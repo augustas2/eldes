@@ -126,10 +126,11 @@ class EldesTemperatureSensor(EldesDeviceEntity, SensorEntity):
     @property
     def name(self):
         """Return the name of the sensor."""
-        return f"{self.__get_temp()['sensorName']} temperature"
+        return f"{self.__get_temp()['sensorName']} Temperature"
 
     @property
     def device_class(self):
+        """Return the device class."""
         return DEVICE_CLASS_TEMPERATURE
 
     @property
@@ -139,9 +140,9 @@ class EldesTemperatureSensor(EldesDeviceEntity, SensorEntity):
 
     @property
     def native_value(self):
-        """Return the state of the sensor."""
+        """Return the value of the sensor."""
         return self.__get_temp().get("temperature", 0.0)
 
     def __get_temp(self):
-        """Return temp of entity."""
+        """Return sensor data."""
         return self.data["temp"][self.entity_index]
