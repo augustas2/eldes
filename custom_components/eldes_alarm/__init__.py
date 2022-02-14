@@ -1,14 +1,13 @@
 """Support for the Eldes API."""
-from datetime import timedelta
-import logging
 import asyncio
+import logging
+from datetime import timedelta
 from http import HTTPStatus
 
 import aiohttp
-
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, CONF_SCAN_INTERVAL
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady, ConfigEntryAuthFailed
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -105,6 +104,7 @@ async def async_get_devices(hass: HomeAssistant, entry: ConfigEntry, eldes_clien
         device["info"] = await eldes_client.get_device_info(device["imei"])
         device["partitions"] = await eldes_client.get_device_partitions(device["imei"])
         device["outputs"] = await eldes_client.get_device_outputs(device["imei"])
+        device["temp"] = await eldes_client.get_temperatures(device["imei"])
 
     hass.data[DOMAIN][entry.entry_id][DATA_DEVICES] = devices
 

@@ -1,9 +1,9 @@
 """Implementation for Eldes Cloud"""
 import asyncio
-import async_timeout
 import logging
-import aiohttp
 
+import aiohttp
+import async_timeout
 from homeassistant.const import (
     STATE_ALARM_ARMED_AWAY,
     STATE_ALARM_ARMED_HOME,
@@ -229,3 +229,18 @@ class EldesCloud:
         )
 
         return response
+
+    async def get_temperatures(self, imei):
+        """Gets device information."""
+        url = f"{API_URL}{API_PATHS['DEVICE']}temperatures?imei={imei}"
+
+        response = await self._api_call(url, "GET")
+        result = await response.json()
+        temperatures = result.get("temperatureDetailsList", [])
+
+        _LOGGER.debug(
+            "get_temperatures result: %s",
+            temperatures
+        )
+
+        return temperatures
