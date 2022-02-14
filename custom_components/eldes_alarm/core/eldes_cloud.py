@@ -1,9 +1,9 @@
 """Implementation for Eldes Cloud"""
 import asyncio
-import logging
-
-import aiohttp
 import async_timeout
+import logging
+import aiohttp
+
 from homeassistant.const import (
     STATE_ALARM_ARMED_AWAY,
     STATE_ALARM_ARMED_HOME,

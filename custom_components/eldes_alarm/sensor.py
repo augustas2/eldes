@@ -3,10 +3,9 @@ import logging
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.const import PERCENTAGE, TEMP_CELSIUS
-from homeassistant.core import HomeAssistant
 
-from . import EldesDeviceEntity
 from .const import (
     DATA_CLIENT,
     DATA_COORDINATOR,
@@ -14,6 +13,7 @@ from .const import (
     SIGNAL_STRENGTH_MAP,
     BATTERY_STATUS_MAP
 )
+from . import EldesDeviceEntity
 
 _LOGGER = logging.getLogger(__name__)
 

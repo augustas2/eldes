@@ -1,13 +1,14 @@
 """Support for the Eldes API."""
-import asyncio
-import logging
 from datetime import timedelta
+import logging
+import asyncio
 from http import HTTPStatus
 
 import aiohttp
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, CONF_SCAN_INTERVAL
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady, ConfigEntryAuthFailed
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession

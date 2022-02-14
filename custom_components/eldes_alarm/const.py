@@ -14,7 +14,7 @@ API_URL = "https://cloud.eldesalarms.com:8083/api/"
 
 API_PATHS = {
     "AUTH": "auth/",
-    "DEVICE": "device/",
+    "DEVICE": "device/"
 }
 
 ALARM_MODES = {
