@@ -1,4 +1,4 @@
-[![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://github.com/hacs/integration)
+[<img src="https://img.shields.io/badge/HACS-Default-41BDF5.svg" width="250"/>](https://github.com/hacs/integration)
 
 # Eldes Alarm
 
@@ -55,6 +55,9 @@ entities:
     max_items: 2
     content_template: '!!!!! ALARM !!!!! {{message}}'
 ```
+
+<img src="https://user-images.githubusercontent.com/28056781/154851881-75a0fc60-15cf-4002-a943-6d9950519415.png" width="250"/>
+
 
 ## Supported devices
 
