@@ -17,6 +17,45 @@ You have two options for installation:
 - Copy "eldes_alarm" folder to the "/config/custom_components" folder.
 - Restart HA server.
 
+## Usage
+
+### Events
+
+#### Event attributes
+
+- `alarms` -> holds events with alarms
+- `user_actions` -> holds events with user action like arm and disarm
+- `events` -> holds all other events
+
+#### Display events
+
+To display events used another integration:
+https://github.com/gadgetchnnel/lovelace-home-feed-card
+
+#### Example config for lovelace-home-feed-card
+```
+type: custom:home-feed-card
+title: Alarm Feed
+card_id: main_feed
+show_notification_title: true
+show_empty: false
+scrollbars_enabled: false
+show_icons: false
+entities:
+  - entity: sensor.events
+    list_attribute: user_actions
+    multiple_items: true
+    timestamp_property: event_time
+    max_items: 5
+    content_template: '{{type}} set by {{name}}'
+  - entity: sensor.events
+    list_attribute: alarms
+    multiple_items: true
+    timestamp_property: event_time
+    max_items: 2
+    content_template: '!!!!! ALARM !!!!! {{message}}'
+```
+
 ## Supported devices
 
 - [ESIM364](https://eldesalarms.com/product/esim364)

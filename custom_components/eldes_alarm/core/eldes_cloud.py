@@ -244,3 +244,18 @@ class EldesCloud:
         )
 
         return temperatures
+
+    async def get_events(self, imei):
+        """Gets device events."""
+        url = f"{API_URL}{API_PATHS['DEVICE']}event/list?imei={imei}"
+
+        response = await self._api_call(url, "POST", {})
+        result = await response.json()
+        events = result.get("eventDetails", [])
+
+        _LOGGER.debug(
+            "get_events result: %s",
+            events
+        )
+
+        return events
