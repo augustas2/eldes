@@ -56,8 +56,7 @@ entities:
     content_template: '!!!!! ALARM !!!!! {{message}}'
 ```
 
-<img src="https://user-images.githubusercontent.com/28056781/154851881-75a0fc60-15cf-4002-a943-6d9950519415.png" width="250"/>
-
+![Screenshot 2022-02-20 at 17 36 50](https://user-images.githubusercontent.com/28056781/154851938-55e33ba4-1819-4f1d-bce0-0e7bd97cdc78.png)
 
 ## Supported devices
 
