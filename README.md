@@ -56,6 +56,8 @@ entities:
     content_template: '!!!!! ALARM !!!!! {{message}}'
 ```
 
+![Screenshot 2022-02-20 at 17 36 50](https://user-images.githubusercontent.com/28056781/154851938-55e33ba4-1819-4f1d-bce0-0e7bd97cdc78.png)
+
 ## Supported devices
 
 - [ESIM364](https://eldesalarms.com/product/esim364)
