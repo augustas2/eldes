@@ -30,9 +30,9 @@ You have two options for installation:
 #### Display events
 
 To display events used another integration:
-https://github.com/gadgetchnnel/lovelace-home-feed-card
+[lovelace-home-feed-card](https://github.com/gadgetchnnel/lovelace-home-feed-card)
 
-#### Example config for lovelace-home-feed-card
+#### Example config for [lovelace-home-feed-card](https://github.com/gadgetchnnel/lovelace-home-feed-card)
 ```
 type: custom:home-feed-card
 title: Alarm Feed

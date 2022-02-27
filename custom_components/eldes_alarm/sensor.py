@@ -12,7 +12,10 @@ from .const import (
     DATA_COORDINATOR,
     DOMAIN,
     SIGNAL_STRENGTH_MAP,
-    BATTERY_STATUS_MAP, ATTR_EVENTS, ATTR_ALARMS, ATTR_USER_ACTIONS
+    BATTERY_STATUS_MAP,
+    ATTR_EVENTS,
+    ATTR_ALARMS,
+    ATTR_USER_ACTIONS
 )
 from . import EldesDeviceEntity
 
@@ -165,7 +168,7 @@ class EventsSensor(EldesDeviceEntity, SensorEntity):
 
     @property
     def native_value(self):
-        """Return the state of the sensor."""
+        """Return the value of the sensor."""
         return len(self.data["events"])
 
     @property
