@@ -46,3 +46,7 @@ BATTERY_STATUS_MAP = {
     True: "OK",
     False: "Bad",
 }
+
+ATTR_EVENTS = "events"
+ATTR_ALARMS = "alarms"
+ATTR_USER_ACTIONS = "user_actions"

@@ -1,5 +1,6 @@
 """Support for Eldes sensors."""
 import logging
+from datetime import datetime
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
@@ -11,7 +12,10 @@ from .const import (
     DATA_COORDINATOR,
     DOMAIN,
     SIGNAL_STRENGTH_MAP,
-    BATTERY_STATUS_MAP
+    BATTERY_STATUS_MAP,
+    ATTR_EVENTS,
+    ATTR_ALARMS,
+    ATTR_USER_ACTIONS
 )
 from . import EldesDeviceEntity
 
@@ -28,6 +32,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         entities.append(EldesBatteryStatusSensor(client, coordinator, index))
         entities.append(EldesGSMStrengthSensor(client, coordinator, index))
         entities.append(EldesPhoneNumberSensor(client, coordinator, index))
+        entities.append(EventsSensor(client, coordinator, index))
         for tempIndex, _ in enumerate(coordinator.data[index]["temp"]):
             entities.append(EldesTemperatureSensor(client, coordinator, index, tempIndex))
 
@@ -146,3 +151,84 @@ class EldesTemperatureSensor(EldesDeviceEntity, SensorEntity):
     def __get_temp(self):
         """Return sensor data."""
         return self.data["temp"][self.entity_index]
+
+
+class EventsSensor(EldesDeviceEntity, SensorEntity):
+    """Class for the events sensor."""
+
+    @property
+    def unique_id(self):
+        """Return a unique identifier for this entity."""
+        return f"{self.imei}_events"
+
+    @property
+    def name(self):
+        """Return the name of the sensor."""
+        return f"Events"
+
+    @property
+    def native_value(self):
+        """Return the value of the sensor."""
+        return len(self.data["events"])
+
+    @property
+    def extra_state_attributes(self):
+        """Return the state attributes."""
+        events = []
+        alarms = []
+        user_actions = []
+        for event in self.data["events"]:
+            if event["type"] == "ALARM":
+                alarms.append(self.__add_time(event))
+            elif event["type"] == "ARM" or event["type"] == "DISARM":
+                user_actions.append(self.__add_time_and_name(event))
+            else:
+                events.append(self.__add_time(event))
+
+        return {
+            ATTR_EVENTS: events,
+            ATTR_ALARMS: alarms,
+            ATTR_USER_ACTIONS: user_actions,
+        }
+
+    @property
+    def icon(self):
+        """Return the icon to use in the frontend."""
+        return "mdi:calendar"
+
+    def __add_time_and_name(self, event):
+        new_event = event
+
+        message = event["message"]
+        name = message.split(" ")[0]
+
+        additional_fields = {
+            'name': name,
+        }
+        new_event.update(additional_fields)
+        return self.__add_time(new_event)
+
+    def __add_time(self, event):
+        new_event = event
+
+        device_time = new_event["deviceTime"]
+        year = self.__safe_list_get(device_time, 0, 2000)
+        month = self.__safe_list_get(device_time, 1, 1)
+        day = self.__safe_list_get(device_time, 2, 1)
+        hour = self.__safe_list_get(device_time, 3, 0)
+        minutes = self.__safe_list_get(device_time, 4, 0)
+        seconds = self.__safe_list_get(device_time, 5, 0)
+        new_date = datetime(year, month, day, hour, minutes, seconds)
+
+        additional_fields = {
+            'event_time': new_date,
+        }
+        new_event.update(additional_fields)
+        return new_event
+
+    @staticmethod
+    def __safe_list_get(current_list, idx, default):
+        try:
+            return current_list[idx]
+        except IndexError:
+            return default
