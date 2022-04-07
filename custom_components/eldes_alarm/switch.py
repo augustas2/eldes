@@ -64,7 +64,7 @@ class EldesSwitch(EldesDeviceEntity, SwitchEntity):
         try:
             return OUTPUT_ICONS_MAP[self.data["outputs"][self.entity_index]["iconName"]]
         except ValueError:
-            _LOGGER.error("Unknown output icon for (%s)", self.data['outputs'][self.entity_index]['name'])
+            _LOGGER.info("Unknown output icon for (%s)", self.data['outputs'][self.entity_index]['name'])
             return OUTPUT_ICONS_MAP["ICON_1"]
 
     async def async_turn_on(self):
