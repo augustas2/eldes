@@ -62,8 +62,14 @@ class EldesSwitch(EldesDeviceEntity, SwitchEntity):
     def icon(self):
         """Return the icon of this sensor."""
         try:
-            return OUTPUT_ICONS_MAP[self.data["outputs"][self.entity_index]["iconName"]]
-        except ValueError:
+            iconName = self.data["outputs"][self.entity_index]["iconName"]
+
+            if iconName is not None:
+                return OUTPUT_ICONS_MAP[iconName]
+
+            return OUTPUT_ICONS_MAP["ICON_1"]
+
+        except Exception:
             _LOGGER.info("Unknown output icon for (%s)", self.data['outputs'][self.entity_index]['name'])
             return OUTPUT_ICONS_MAP["ICON_1"]
 
