@@ -2,10 +2,10 @@
 import logging
 from datetime import datetime
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.const import PERCENTAGE, TEMP_CELSIUS, DEVICE_CLASS_TEMPERATURE
+from homeassistant.const import PERCENTAGE, TEMP_CELSIUS
 
 from .const import (
     DATA_CLIENT,
@@ -136,7 +136,7 @@ class EldesTemperatureSensor(EldesDeviceEntity, SensorEntity):
     @property
     def device_class(self):
         """Return the device class."""
-        return DEVICE_CLASS_TEMPERATURE
+        return SensorDeviceClass.TEMPERATURE
 
     @property
     def native_unit_of_measurement(self):
