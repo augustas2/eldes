@@ -75,9 +75,11 @@ class EldesSwitch(EldesDeviceEntity, SwitchEntity):
 
     async def async_turn_on(self):
         """Turn the entity on."""
+        output = self.data["outputs"][self.entity_index]
+
         await self.client.turn_on_output(
             self.imei,
-            self.entity_index
+            output['id']
         )
 
         self.data["outputs"][self.entity_index]["outputState"] = True
@@ -85,9 +87,11 @@ class EldesSwitch(EldesDeviceEntity, SwitchEntity):
 
     async def async_turn_off(self):
         """Turn the entity off."""
+        output = self.data["outputs"][self.entity_index]
+
         await self.client.turn_off_output(
             self.imei,
-            self.entity_index
+            output['id']
         )
 
         self.data["outputs"][self.entity_index]["outputState"] = False
