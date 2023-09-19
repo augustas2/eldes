@@ -26,7 +26,7 @@ class EldesCloud:
 
     def __init__(self, session: aiohttp.ClientSession, username: str, password: str):
         """Performs login and save session cookie."""
-        self.timeout = 10
+        self.timeout = 30
         self.headers = {
             'X-Requested-With': 'XMLHttpRequest',
             'x-whitelable': 'eldes'
