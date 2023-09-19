@@ -25,6 +25,8 @@ from .const import (
     DATA_COORDINATOR,
     DATA_DEVICES,
     DEFAULT_SCAN_INTERVAL,
+    DEFAULT_EVENTS_LIST_SIZE,
+    CONF_EVENTS_LIST_SIZE,
     DOMAIN
 )
 from .core.eldes_cloud import EldesCloud
@@ -95,6 +97,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_get_devices(hass: HomeAssistant, entry: ConfigEntry, eldes_client: EldesCloud):
     """Fetch data from Eldes API."""
+    events_list_size = entry.options.get(CONF_EVENTS_LIST_SIZE, DEFAULT_EVENTS_LIST_SIZE)
 
     await eldes_client.renew_token()
 
@@ -106,7 +109,7 @@ async def async_get_devices(hass: HomeAssistant, entry: ConfigEntry, eldes_clien
         device["partitions"] = await eldes_client.get_device_partitions(device["imei"])
         device["outputs"] = await eldes_client.get_device_outputs(device["imei"])
         device["temp"] = await eldes_client.get_temperatures(device["imei"])
-        device["events"] = await eldes_client.get_events(device["imei"])
+        device["events"] = await eldes_client.get_events(events_list_size)
 
     hass.data[DOMAIN][entry.entry_id][DATA_DEVICES] = devices
 
