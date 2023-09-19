@@ -1,12 +1,12 @@
 {
   "domain": "eldes_alarm",
   "name": "Eldes Alarm",
-  "config_flow": true,
-  "documentation": "https://github.com/augustas2/eldes/blob/master/README.md",
-  "issue_tracker": "https://github.com/augustas2/eldes/issues",
   "codeowners": ["@augustas2"],
+  "config_flow": true,
   "dependencies": ["http"],
+  "documentation": "https://github.com/augustas2/eldes/blob/master/README.md",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/augustas2/eldes/issues",
   "requirements": [],
-  "version": "1.0.0",
-  "iot_class": "cloud_polling"
+  "version": "1.0.0"
 }
