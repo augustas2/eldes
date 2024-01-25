@@ -1,13 +1,12 @@
 """Interfaces with Eldes control panels."""
 import logging
 
-from homeassistant.components.alarm_control_panel import AlarmControlPanelEntity
+from homeassistant.components.alarm_control_panel import (
+    AlarmControlPanelEntity,
+    AlarmControlPanelEntityFeature
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.components.alarm_control_panel.const import (
-    SUPPORT_ALARM_ARM_AWAY,
-    SUPPORT_ALARM_ARM_HOME
-)
 from homeassistant.const import (
     STATE_ALARM_ARMED_AWAY,
     STATE_ALARM_ARMED_HOME,
@@ -71,7 +70,7 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
     @property
     def supported_features(self):
         """Return the list of supported features."""
-        return SUPPORT_ALARM_ARM_AWAY | SUPPORT_ALARM_ARM_HOME
+        return AlarmControlPanelEntityFeature.ARM_AWAY | AlarmControlPanelEntityFeature.ARM_HOME
 
     async def async_alarm_disarm(self, code=None):
         """Send disarm command."""
