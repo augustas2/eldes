@@ -42,6 +42,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
     """Representation of an Eldes Alarm."""
 
+    _attr_code_arm_required = False
+
     @property
     def unique_id(self):
         """Return the unique id."""
