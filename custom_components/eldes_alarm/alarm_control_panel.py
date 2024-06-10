@@ -42,6 +42,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
     """Representation of an Eldes Alarm."""
 
+    _attr_supported_features = (
+        AlarmControlPanelEntityFeature.ARM_AWAY
+        | AlarmControlPanelEntityFeature.ARM_HOME
+    )
+    _attr_code_arm_required = False
+
     @property
     def unique_id(self):
         """Return the unique id."""
@@ -67,12 +73,7 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
             "hasUnacceptedPartitionAlarms": self.data["hasUnacceptedPartitionAlarms"]
         }
 
-    @property
-    def supported_features(self):
-        """Return the list of supported features."""
-        return AlarmControlPanelEntityFeature.ARM_AWAY | AlarmControlPanelEntityFeature.ARM_HOME
-
-    async def async_alarm_disarm(self, code=None):
+    async def async_alarm_disarm(self, code: str | None = None) -> None:
         """Send disarm command."""
         current_state = self.data["state"]
 
@@ -91,7 +92,7 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
             self.data["state"] = current_state
             self.async_write_ha_state()
 
-    async def async_alarm_arm_away(self, code=None):
+    async def async_alarm_arm_away(self, code: str | None = None) -> None:
         """Send arm away command."""
         current_state = self.data["state"]
 
@@ -110,7 +111,7 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
             self.data["state"] = current_state
             self.async_write_ha_state()
 
-    async def async_alarm_arm_home(self, code=None):
+    async def async_alarm_arm_home(self, code: str | None = None) -> None:
         """Send arm night command."""
         current_state = self.data["state"]
 
