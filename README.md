@@ -63,3 +63,4 @@ entities:
 - [ESIM364](https://eldesalarms.com/product/esim364)
 - [ESIM384](https://eldesalarms.com/product/esim384)
 - [Pitbull Alarm PRO](https://eldesalarms.com/product/pitbull-pro/3g)
+- EPIR3
