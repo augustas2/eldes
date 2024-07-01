@@ -99,8 +99,6 @@ async def async_get_devices(hass: HomeAssistant, entry: ConfigEntry, eldes_clien
     """Fetch data from Eldes API."""
     events_list_size = entry.options.get(CONF_EVENTS_LIST_SIZE, DEFAULT_EVENTS_LIST_SIZE)
 
-    await eldes_client.renew_token()
-
     devices = await eldes_client.get_devices()
 
     # Retrieve additional device info, partitions and outputs

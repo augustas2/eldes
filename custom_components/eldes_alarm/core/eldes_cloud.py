@@ -46,15 +46,26 @@ class EldesCloud:
 
         return data
 
+    async def _call(self, url, method, data=None):
+        async with async_timeout.timeout(self.timeout):
+            return await self._http_session.request(
+                method,
+                url,
+                json=data,
+                headers=self.headers
+            )
+
     async def _api_call(self, url, method, data=None):
         try:
-            async with async_timeout.timeout(self.timeout):
-                req = await self._http_session.request(
-                    method,
-                    url,
-                    json=data,
-                    headers=self.headers
-                )
+            req = await self._call(url, method, data)
+
+            if req.status == 401:
+                await self.login()
+                req = await self._call(url, method, data)
+            elif req.status == 403:
+                await self.renew_token()
+                req = await self._call(url, method, data)
+
             req.raise_for_status()
             return req
 
@@ -75,7 +86,7 @@ class EldesCloud:
 
         url = f"{API_URL}{API_PATHS['AUTH']}login"
 
-        resp = await self._api_call(url, "POST", data)
+        resp = await self._call(url, "POST", data)
         result = await resp.json()
 
         _LOGGER.debug(
@@ -97,6 +108,10 @@ class EldesCloud:
             timeout=self.timeout,
             headers=headers
         )
+
+        if response.status == 401:
+            return await self.login()
+
         result = await response.json()
 
         _LOGGER.debug(
