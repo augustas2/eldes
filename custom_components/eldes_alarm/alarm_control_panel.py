@@ -3,17 +3,11 @@ import logging
 
 from homeassistant.components.alarm_control_panel import (
     AlarmControlPanelEntity,
-    AlarmControlPanelEntityFeature
+    AlarmControlPanelEntityFeature,
+    AlarmControlPanelState
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.const import (
-    STATE_ALARM_ARMED_AWAY,
-    STATE_ALARM_ARMED_HOME,
-    STATE_ALARM_DISARMED,
-    STATE_ALARM_DISARMING,
-    STATE_ALARM_ARMING
-)
 
 from .const import (
     DATA_CLIENT,
@@ -77,7 +71,7 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
         """Send disarm command."""
         current_state = self.data["state"]
 
-        self.data["state"] = STATE_ALARM_DISARMING
+        self.data["state"] = AlarmControlPanelState.DISARMING
         self.async_write_ha_state()
 
         try:
@@ -96,7 +90,7 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
         """Send arm away command."""
         current_state = self.data["state"]
 
-        self.data["state"] = STATE_ALARM_ARMING
+        self.data["state"] = AlarmControlPanelState.ARMING
         self.async_write_ha_state()
 
         try:
@@ -115,7 +109,7 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
         """Send arm night command."""
         current_state = self.data["state"]
 
-        self.data["state"] = STATE_ALARM_ARMING
+        self.data["state"] = AlarmControlPanelState.ARMING
         self.async_write_ha_state()
 
         try:
