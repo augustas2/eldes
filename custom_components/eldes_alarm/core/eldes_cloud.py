@@ -4,10 +4,8 @@ import async_timeout
 import logging
 import aiohttp
 
-from homeassistant.const import (
-    STATE_ALARM_ARMED_AWAY,
-    STATE_ALARM_ARMED_HOME,
-    STATE_ALARM_DISARMED
+from homeassistant.components.alarm_control_panel import (
+    AlarmControlPanelState
 )
 
 from ..const import API_URL, API_PATHS
@@ -15,9 +13,9 @@ from ..const import API_URL, API_PATHS
 _LOGGER = logging.getLogger(__name__)
 
 ALARM_STATES_MAP = {
-    "DISARMED": STATE_ALARM_DISARMED,
-    "ARMED": STATE_ALARM_ARMED_AWAY,
-    "ARMSTAY": STATE_ALARM_ARMED_HOME
+    "DISARMED": AlarmControlPanelState.DISARMED,
+    "ARMED": AlarmControlPanelState.ARMED_AWAY,
+    "ARMSTAY": AlarmControlPanelState.ARMED_HOME
 }
 
 
@@ -149,7 +147,7 @@ class EldesCloud:
 
         # Replace Eldes state with HA state name
         for partitionIndex, _ in enumerate(partitions):
-            partitions[partitionIndex]["state"] = ALARM_STATES_MAP[partitions[partitionIndex].get("state", STATE_ALARM_DISARMED)]
+            partitions[partitionIndex]["state"] = ALARM_STATES_MAP[partitions[partitionIndex].get("state", AlarmControlPanelState.DISARMED)]
 
         _LOGGER.debug(
             "get_device_partitions result: %s",
