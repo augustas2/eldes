@@ -60,6 +60,7 @@ entities:
 
 ## Supported devices
 
-- [ESIM364](https://eldesalarms.com/product/esim364)
-- [ESIM384](https://eldesalarms.com/product/esim384)
-- [Pitbull Alarm PRO](https://eldesalarms.com/product/pitbull-pro/3g)
+- [ESIM364](https://eldesalarms.com/hybrid-alarm-control-panel-with-gsm-gprs-communicator-esim364)
+- [ESIM384](https://eldesalarms.com/esim384)
+- [Pitbull Alarm PRO](https://eldesalarms.com/pitbull-alarm-pro)
+- EPIR3
