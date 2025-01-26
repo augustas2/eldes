@@ -67,7 +67,7 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
             "hasUnacceptedPartitionAlarms": self.data["hasUnacceptedPartitionAlarms"]
         }
 
-    async def async_alarm_disarm(self, code: str | None = None) -> None:
+    async def async_alarm_disarm(self, code=None):
         """Send disarm command."""
         current_state = self.data["state"]
 
@@ -86,7 +86,7 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
             self.data["state"] = current_state
             self.async_write_ha_state()
 
-    async def async_alarm_arm_away(self, code: str | None = None) -> None:
+    async def async_alarm_arm_away(self, code=None):
         """Send arm away command."""
         current_state = self.data["state"]
 
@@ -105,7 +105,7 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
             self.data["state"] = current_state
             self.async_write_ha_state()
 
-    async def async_alarm_arm_home(self, code: str | None = None) -> None:
+    async def async_alarm_arm_home(self, code=None):
         """Send arm night command."""
         current_state = self.data["state"]
 

@@ -22,9 +22,9 @@ ALARM_STATES_MAP = {
 class EldesCloud:
     """Interacts with Eldes via public API."""
 
-    def __init__(self, session: aiohttp.ClientSession, username: str, password: str):
+    def __init__(self, session: aiohttp.ClientSession, username: str, password: str, pin: str):
         """Performs login and save session cookie."""
-        self.timeout = 30
+        self.timeout = 10
         self.headers = {
             'X-Requested-With': 'XMLHttpRequest',
             'x-whitelable': 'eldes'
@@ -34,6 +34,7 @@ class EldesCloud:
         self._http_session = session
         self._username = username
         self._password = password
+        self._pin = pin
 
     async def _setOAuthHeader(self, data):
         if 'refreshToken' in data:
@@ -44,15 +45,27 @@ class EldesCloud:
 
         return data
 
+    async def _call(self, url, method, data=None):
+        async with async_timeout.timeout(self.timeout):
+            return await self._http_session.request(
+                method,
+                url,
+                json=data,
+                headers=self.headers,
+                ssl=False
+            )
+
     async def _api_call(self, url, method, data=None):
         try:
-            async with async_timeout.timeout(self.timeout):
-                req = await self._http_session.request(
-                    method,
-                    url,
-                    json=data,
-                    headers=self.headers
-                )
+            req = await self._call(url, method, data)
+
+            if req.status == 401:
+                await self.login()
+                req = await self._call(url, method, data)
+            elif req.status == 403:
+                await self.renew_token()
+                req = await self._call(url, method, data)
+
             req.raise_for_status()
             return req
 
@@ -73,7 +86,7 @@ class EldesCloud:
 
         url = f"{API_URL}{API_PATHS['AUTH']}login"
 
-        resp = await self._api_call(url, "POST", data)
+        resp = await self._call(url, "POST", data)
         result = await resp.json()
 
         _LOGGER.debug(
@@ -95,6 +108,10 @@ class EldesCloud:
             timeout=self.timeout,
             headers=headers
         )
+
+        if response.status == 401:
+            return await self.login()
+
         result = await response.json()
 
         _LOGGER.debug(
@@ -136,7 +153,8 @@ class EldesCloud:
     async def get_device_partitions(self, imei):
         """Gets device partitions/zones."""
         data = {
-            'imei': imei
+            'imei': imei,
+            'pin': self._pin
         }
 
         url = f"{API_URL}{API_PATHS['DEVICE']}partition/list?imei={imei}"
@@ -159,7 +177,8 @@ class EldesCloud:
     async def get_device_outputs(self, imei):
         """Gets device outputs/automations."""
         data = {
-            'imei': imei
+            'imei': imei,
+            'pin': self._pin
         }
 
         url = f"{API_URL}{API_PATHS['DEVICE']}list-outputs/{imei}"
@@ -179,7 +198,8 @@ class EldesCloud:
         """Sets alarm to provided mode."""
         data = {
             'imei': imei,
-            'partitionIndex': zone_id
+            'partitionIndex': zone_id,
+            'pin': self._pin
         }
 
         url = f"{API_URL}{API_PATHS['DEVICE']}action/{mode}"
@@ -197,7 +217,8 @@ class EldesCloud:
     async def turn_on_output(self, imei, output_id):
         """Turns on output."""
         data = {
-            "": ""
+            "": "",
+            'pin': self._pin
         }
 
         url = f"{API_URL}{API_PATHS['DEVICE']}control/enable/{imei}/{output_id}"
@@ -214,7 +235,8 @@ class EldesCloud:
     async def turn_off_output(self, imei, output_id):
         """Turns off output."""
         data = {
-            "": ""
+            "": "",
+            'pin': self._pin
         }
 
         url = f"{API_URL}{API_PATHS['DEVICE']}control/disable/{imei}/{output_id}"
@@ -230,9 +252,14 @@ class EldesCloud:
 
     async def get_temperatures(self, imei):
         """Gets device information."""
+        data = {
+            "": "",
+            'pin': self._pin
+        }
+
         url = f"{API_URL}{API_PATHS['DEVICE']}temperatures?imei={imei}"
 
-        response = await self._api_call(url, "POST", {})
+        response = await self._api_call(url, "POST", data)
         result = await response.json()
         temperatures = result.get("temperatureDetailsList", [])
 
@@ -243,15 +270,15 @@ class EldesCloud:
 
         return temperatures
 
-    async def get_events(self, size):
+    async def get_events(self, imei, size):
         """Gets device events."""
         data = {
-            "": "",
+            "imei": imei,
             "size": size,
-            "start": 0
+            'pin': self._pin
         }
 
-        url = f"{API_URL}{API_PATHS['DEVICE']}event/list"
+        url = f"{API_URL}{API_PATHS['DEVICE']}event/list?imei={imei}"
 
         response = await self._api_call(url, "POST", data)
         result = await response.json()
