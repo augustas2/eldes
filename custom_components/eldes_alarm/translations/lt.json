@@ -22,7 +22,8 @@
         "title": "Eldes integracijos nustatymai",
         "description": "Pakeiskite atnaujinimo intervalą, norėdami dažniau arba rečiau atnaujinti duomenis.",
         "data": {
-          "scan_interval": "Atnaujinimo intervalas (sekundės)"
+          "scan_interval": "Atnaujinimo intervalas (sekundės)",
+          "events_list_size": "Įvykių sąrašo ilgis"
         }
       }
     }
