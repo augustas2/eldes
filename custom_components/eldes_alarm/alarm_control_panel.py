@@ -1,20 +1,13 @@
 """Interfaces with Eldes control panels."""
 import logging
 
-from homeassistant.components.alarm_control_panel import AlarmControlPanelEntity
+from homeassistant.components.alarm_control_panel import (
+    AlarmControlPanelEntity,
+    AlarmControlPanelEntityFeature,
+    AlarmControlPanelState
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.components.alarm_control_panel.const import (
-    SUPPORT_ALARM_ARM_AWAY,
-    SUPPORT_ALARM_ARM_HOME
-)
-from homeassistant.const import (
-    STATE_ALARM_ARMED_AWAY,
-    STATE_ALARM_ARMED_HOME,
-    STATE_ALARM_DISARMED,
-    STATE_ALARM_DISARMING,
-    STATE_ALARM_ARMING
-)
 
 from .const import (
     DATA_CLIENT,
@@ -43,6 +36,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
     """Representation of an Eldes Alarm."""
 
+    _attr_supported_features = (
+        AlarmControlPanelEntityFeature.ARM_AWAY
+        | AlarmControlPanelEntityFeature.ARM_HOME
+    )
+    _attr_code_arm_required = False
+
     @property
     def unique_id(self):
         """Return the unique id."""
@@ -68,16 +67,11 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
             "hasUnacceptedPartitionAlarms": self.data["hasUnacceptedPartitionAlarms"]
         }
 
-    @property
-    def supported_features(self):
-        """Return the list of supported features."""
-        return SUPPORT_ALARM_ARM_AWAY | SUPPORT_ALARM_ARM_HOME
-
-    async def async_alarm_disarm(self, code=None):
+    async def async_alarm_disarm(self, code: str | None = None) -> None:
         """Send disarm command."""
         current_state = self.data["state"]
 
-        self.data["state"] = STATE_ALARM_DISARMING
+        self.data["state"] = AlarmControlPanelState.DISARMING
         self.async_write_ha_state()
 
         try:
@@ -85,18 +79,18 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
             await self.client.set_alarm(
                 ALARM_MODES["DISARM"],
                 self.imei,
-                self.entity_index
+                self.data['internalId']
             )
         except Exception as ex:
             _LOGGER.error("Failed to change state: %s", ex)
             self.data["state"] = current_state
             self.async_write_ha_state()
 
-    async def async_alarm_arm_away(self, code=None):
+    async def async_alarm_arm_away(self, code: str | None = None) -> None:
         """Send arm away command."""
         current_state = self.data["state"]
 
-        self.data["state"] = STATE_ALARM_ARMING
+        self.data["state"] = AlarmControlPanelState.ARMING
         self.async_write_ha_state()
 
         try:
@@ -104,18 +98,18 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
             await self.client.set_alarm(
                 ALARM_MODES["ARM_AWAY"],
                 self.imei,
-                self.entity_index
+                self.data['internalId']
             )
         except Exception as ex:
             _LOGGER.error("Failed to change state: %s", ex)
             self.data["state"] = current_state
             self.async_write_ha_state()
 
-    async def async_alarm_arm_home(self, code=None):
+    async def async_alarm_arm_home(self, code: str | None = None) -> None:
         """Send arm night command."""
         current_state = self.data["state"]
 
-        self.data["state"] = STATE_ALARM_ARMING
+        self.data["state"] = AlarmControlPanelState.ARMING
         self.async_write_ha_state()
 
         try:
@@ -123,7 +117,7 @@ class EldesAlarmPanel(EldesZoneEntity, AlarmControlPanelEntity):
             await self.client.set_alarm(
                 ALARM_MODES["ARM_HOME"],
                 self.imei,
-                self.entity_index
+                self.data['internalId']
             )
         except Exception as ex:
             _LOGGER.error("Failed to change state: %s", ex)
