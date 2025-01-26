@@ -7,7 +7,7 @@ from http import HTTPStatus
 import aiohttp
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, CONF_SCAN_INTERVAL
+from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, CONF_PIN, CONF_SCAN_INTERVAL
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady, ConfigEntryAuthFailed
 from homeassistant.helpers import config_validation as cv
@@ -42,10 +42,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Eldes from a config entry."""
     username = entry.data[CONF_USERNAME]
     password = entry.data[CONF_PASSWORD]
+    pin = entry.data[CONF_PIN]
     scan_interval = entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
 
     session = async_get_clientsession(hass)
-    eldes_client = EldesCloud(session, username, password)
+    eldes_client = EldesCloud(session, username, password, pin)
 
     try:
         await eldes_client.login()
@@ -107,7 +108,7 @@ async def async_get_devices(hass: HomeAssistant, entry: ConfigEntry, eldes_clien
         device["partitions"] = await eldes_client.get_device_partitions(device["imei"])
         device["outputs"] = await eldes_client.get_device_outputs(device["imei"])
         device["temp"] = await eldes_client.get_temperatures(device["imei"])
-        device["events"] = await eldes_client.get_events(events_list_size)
+        device["events"] = await eldes_client.get_events(device["imei"], events_list_size)
 
     hass.data[DOMAIN][entry.entry_id][DATA_DEVICES] = devices
 

@@ -22,8 +22,7 @@
         "title": "Configure Eldes integration",
         "description": "Update the scan interval to poll for data more often.",
         "data": {
-          "scan_interval": "Scan Interval (seconds)",
-          "events_list_size": "Events list size"
+          "scan_interval": "Scan Interval (seconds)"
         }
       }
     }

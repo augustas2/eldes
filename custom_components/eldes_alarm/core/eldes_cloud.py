@@ -22,9 +22,9 @@ ALARM_STATES_MAP = {
 class EldesCloud:
     """Interacts with Eldes via public API."""
 
-    def __init__(self, session: aiohttp.ClientSession, username: str, password: str):
+    def __init__(self, session: aiohttp.ClientSession, username: str, password: str, pin: str):
         """Performs login and save session cookie."""
-        self.timeout = 30
+        self.timeout = 10
         self.headers = {
             'X-Requested-With': 'XMLHttpRequest',
             'x-whitelable': 'eldes'
@@ -34,6 +34,7 @@ class EldesCloud:
         self._http_session = session
         self._username = username
         self._password = password
+        self._pin = pin
 
     async def _setOAuthHeader(self, data):
         if 'refreshToken' in data:
@@ -50,7 +51,8 @@ class EldesCloud:
                 method,
                 url,
                 json=data,
-                headers=self.headers
+                headers=self.headers,
+                ssl=False
             )
 
     async def _api_call(self, url, method, data=None):
@@ -151,7 +153,8 @@ class EldesCloud:
     async def get_device_partitions(self, imei):
         """Gets device partitions/zones."""
         data = {
-            'imei': imei
+            'imei': imei,
+            'pin': self._pin
         }
 
         url = f"{API_URL}{API_PATHS['DEVICE']}partition/list?imei={imei}"
@@ -174,7 +177,8 @@ class EldesCloud:
     async def get_device_outputs(self, imei):
         """Gets device outputs/automations."""
         data = {
-            'imei': imei
+            'imei': imei,
+            'pin': self._pin
         }
 
         url = f"{API_URL}{API_PATHS['DEVICE']}list-outputs/{imei}"
@@ -194,7 +198,8 @@ class EldesCloud:
         """Sets alarm to provided mode."""
         data = {
             'imei': imei,
-            'partitionIndex': zone_id
+            'partitionIndex': zone_id,
+            'pin': self._pin
         }
 
         url = f"{API_URL}{API_PATHS['DEVICE']}action/{mode}"
@@ -212,7 +217,8 @@ class EldesCloud:
     async def turn_on_output(self, imei, output_id):
         """Turns on output."""
         data = {
-            "": ""
+            "": "",
+            'pin': self._pin
         }
 
         url = f"{API_URL}{API_PATHS['DEVICE']}control/enable/{imei}/{output_id}"
@@ -229,7 +235,8 @@ class EldesCloud:
     async def turn_off_output(self, imei, output_id):
         """Turns off output."""
         data = {
-            "": ""
+            "": "",
+            'pin': self._pin
         }
 
         url = f"{API_URL}{API_PATHS['DEVICE']}control/disable/{imei}/{output_id}"
@@ -245,9 +252,14 @@ class EldesCloud:
 
     async def get_temperatures(self, imei):
         """Gets device information."""
+        data = {
+            "": "",
+            'pin': self._pin
+        }
+
         url = f"{API_URL}{API_PATHS['DEVICE']}temperatures?imei={imei}"
 
-        response = await self._api_call(url, "POST", {})
+        response = await self._api_call(url, "POST", data)
         result = await response.json()
         temperatures = result.get("temperatureDetailsList", [])
 
@@ -258,15 +270,15 @@ class EldesCloud:
 
         return temperatures
 
-    async def get_events(self, size):
+    async def get_events(self, imei, size):
         """Gets device events."""
         data = {
-            "": "",
+            "imei": imei,
             "size": size,
-            "start": 0
+            'pin': self._pin
         }
 
-        url = f"{API_URL}{API_PATHS['DEVICE']}event/list"
+        url = f"{API_URL}{API_PATHS['DEVICE']}event/list?imei={imei}"
 
         response = await self._api_call(url, "POST", data)
         result = await response.json()

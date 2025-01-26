@@ -8,7 +8,7 @@ from http import HTTPStatus
 from homeassistant import config_entries, core, exceptions
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, CONF_SCAN_INTERVAL
+from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, CONF_PIN, CONF_SCAN_INTERVAL
 
 from .core.eldes_cloud import EldesCloud
 from .const import DOMAIN, DEFAULT_SCAN_INTERVAL, DEFAULT_EVENTS_LIST_SIZE, CONF_EVENTS_LIST_SIZE
@@ -18,7 +18,8 @@ _LOGGER = logging.getLogger(__name__)
 DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_USERNAME): str,
-        vol.Required(CONF_PASSWORD): str
+        vol.Required(CONF_PASSWORD): str,
+        vol.Required(CONF_PIN): str
     }
 )
 
@@ -40,11 +41,12 @@ class EldesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self._username = user_input[CONF_USERNAME]
             self._password = user_input[CONF_PASSWORD]
+            self._pin = user_input[CONF_PIN]
             unique_id = user_input[CONF_USERNAME].lower()
             await self.async_set_unique_id(unique_id)
 
             session = async_get_clientsession(self.hass)
-            eldes_client = EldesCloud(session, self._username, self._password)
+            eldes_client = EldesCloud(session, self._username, self._password, self._pin)
 
             try:
                 await eldes_client.login()
