@@ -4,11 +4,9 @@ from datetime import datetime
 
 from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.const import (
-    PERCENTAGE,
-    UnitOfTemperature
-)
+from homeassistant.core import HomeAssistant
+from homeassistant.const import PERCENTAGE, UnitOfTemperature
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
     DATA_CLIENT,
@@ -18,9 +16,8 @@ from .const import (
     BATTERY_STATUS_MAP,
     ATTR_EVENTS,
     ATTR_ALARMS,
-    ATTR_USER_ACTIONS
+    ATTR_USER_ACTIONS,
 )
-from . import EldesDeviceEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,154 +33,137 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         entities.append(EldesGSMStrengthSensor(client, coordinator, index))
         entities.append(EldesPhoneNumberSensor(client, coordinator, index))
         entities.append(EventsSensor(client, coordinator, index))
-        for tempIndex, _ in enumerate(coordinator.data[index]["temp"]):
-            entities.append(EldesTemperatureSensor(client, coordinator, index, tempIndex))
+        for temp_index, _ in enumerate(coordinator.data[index]["temp"]):
+            entities.append(EldesTemperatureSensor(client, coordinator, index, temp_index))
 
     async_add_entities(entities)
 
 
-class EldesBatteryStatusSensor(EldesDeviceEntity, SensorEntity):
-    """Class for the battery status sensor."""
+class BaseEldesSensor(CoordinatorEntity, SensorEntity):
+    def __init__(self, client, coordinator, device_index):
+        super().__init__(coordinator)
+        self.client = client
+        self.device_index = device_index
 
     @property
+    def imei(self):
+        return self.coordinator.data[self.device_index].get("imei")
+
+    @property
+    def data(self):
+        return self.coordinator.data[self.device_index]
+
+
+class EldesBatteryStatusSensor(BaseEldesSensor):
+    @property
     def unique_id(self):
-        """Return a unique identifier for this entity."""
         return f"{self.imei}_battery_status"
 
     @property
     def name(self):
-        """Return the name of the sensor."""
         return f"{self.data['info']['model']} Battery Status"
 
     @property
     def icon(self):
-        """Return the icon of this sensor."""
-        if not self.data["info"]["batteryStatus"]:
-            return "mdi:battery-alert-variant-outline"
-        return "mdi:battery"
+        return "mdi:battery" if self.data["info"].get("batteryStatus") else "mdi:battery-alert-variant-outline"
 
     @property
     def native_value(self):
-        """Return the state of the sensor."""
         return BATTERY_STATUS_MAP[self.data["info"].get("batteryStatus", False)]
 
 
-class EldesGSMStrengthSensor(EldesDeviceEntity, SensorEntity):
-    """Class for the GSM strength sensor."""
-
+class EldesGSMStrengthSensor(BaseEldesSensor):
     @property
     def unique_id(self):
-        """Return a unique identifier for this entity."""
         return f"{self.imei}_gsm_strength"
 
     @property
     def name(self):
-        """Return the name of the sensor."""
         return f"{self.data['info']['model']} GSM Strength"
 
     @property
     def icon(self):
-        """Return the icon of this sensor."""
-        if self.data["info"]["gsmStrength"] == 0:
-            return "mdi:signal-off"
-        return "mdi:signal"
+        return "mdi:signal" if self.data["info"].get("gsmStrength", 0) > 0 else "mdi:signal-off"
 
     @property
     def native_unit_of_measurement(self):
-        """Return the unit of measurement."""
         return PERCENTAGE
 
     @property
     def native_value(self):
-        """Return the state of the sensor."""
         return SIGNAL_STRENGTH_MAP[self.data["info"].get("gsmStrength", 0)]
 
 
-class EldesPhoneNumberSensor(EldesDeviceEntity, SensorEntity):
-    """Class for the phone number sensor."""
-
+class EldesPhoneNumberSensor(BaseEldesSensor):
     @property
     def unique_id(self):
-        """Return a unique identifier for this entity."""
         return f"{self.imei}_phone_number"
 
     @property
     def name(self):
-        """Return the name of the sensor."""
         return f"{self.data['info']['model']} Phone Number"
 
     @property
     def icon(self):
-        """Return the icon of this sensor."""
         return "mdi:cellphone"
 
     @property
     def native_value(self):
-        """Return the state of the sensor."""
         return self.data["info"].get("phoneNumber", "")
 
 
-class EldesTemperatureSensor(EldesDeviceEntity, SensorEntity):
-    """Class for the temperature sensor."""
+class EldesTemperatureSensor(BaseEldesSensor):
+    def __init__(self, client, coordinator, device_index, entity_index):
+        super().__init__(client, coordinator, device_index)
+        self.entity_index = entity_index
 
     @property
     def unique_id(self):
-        """Return a unique identifier for this entity."""
-        return f"{self.imei}_{self.__get_temp()['sensorName']}_{self.__get_temp()['sensorId']}_temperature"
+        t = self.__get_temp()
+        return f"{self.imei}_{t['sensorName']}_{t['sensorId']}_temperature"
 
     @property
     def name(self):
-        """Return the name of the sensor."""
         return f"{self.__get_temp()['sensorName']} Temperature"
 
     @property
     def device_class(self):
-        """Return the device class."""
         return SensorDeviceClass.TEMPERATURE
 
     @property
     def native_unit_of_measurement(self):
-        """Return the unit of measurement."""
         return UnitOfTemperature.CELSIUS
 
     @property
     def native_value(self):
-        """Return the value of the sensor."""
         return self.__get_temp().get("temperature", 0.0)
 
     def __get_temp(self):
-        """Return sensor data."""
         return self.data["temp"][self.entity_index]
 
 
-class EventsSensor(EldesDeviceEntity, SensorEntity):
-    """Class for the events sensor."""
-
+class EventsSensor(BaseEldesSensor):
     @property
     def unique_id(self):
-        """Return a unique identifier for this entity."""
         return f"{self.imei}_events"
 
     @property
     def name(self):
-        """Return the name of the sensor."""
-        return f"Events"
+        return "Events"
 
     @property
     def native_value(self):
-        """Return the value of the sensor."""
-        return len(self.data["events"])
+        return len(self.data.get("events", []))
 
     @property
     def extra_state_attributes(self):
-        """Return the state attributes."""
         events = []
         alarms = []
         user_actions = []
-        for event in self.data["events"]:
+        for event in self.data.get("events", []):
             if event["type"] == "ALARM":
                 alarms.append(self.__add_time(event))
-            elif event["type"] == "ARM" or event["type"] == "DISARM":
+            elif event["type"] in ("ARM", "DISARM"):
                 user_actions.append(self.__add_time_and_name(event))
             else:
                 events.append(self.__add_time(event))
@@ -196,37 +176,25 @@ class EventsSensor(EldesDeviceEntity, SensorEntity):
 
     @property
     def icon(self):
-        """Return the icon to use in the frontend."""
         return "mdi:calendar"
 
     def __add_time_and_name(self, event):
-        new_event = event
-
-        message = event["message"]
-        name = message.split(" ")[0]
-
-        additional_fields = {
-            'name': name,
-        }
-        new_event.update(additional_fields)
+        new_event = event.copy()
+        message = new_event.get("message", "")
+        name = message.split(" ")[0] if message else ""
+        new_event.update({"name": name})
         return self.__add_time(new_event)
 
     def __add_time(self, event):
-        new_event = event
-
-        device_time = new_event["deviceTime"]
+        new_event = event.copy()
+        device_time = new_event.get("deviceTime", [])
         year = self.__safe_list_get(device_time, 0, 2000)
         month = self.__safe_list_get(device_time, 1, 1)
         day = self.__safe_list_get(device_time, 2, 1)
         hour = self.__safe_list_get(device_time, 3, 0)
         minutes = self.__safe_list_get(device_time, 4, 0)
         seconds = self.__safe_list_get(device_time, 5, 0)
-        new_date = datetime(year, month, day, hour, minutes, seconds)
-
-        additional_fields = {
-            'event_time': new_date,
-        }
-        new_event.update(additional_fields)
+        new_event["event_time"] = datetime(year, month, day, hour, minutes, seconds)
         return new_event
 
     @staticmethod

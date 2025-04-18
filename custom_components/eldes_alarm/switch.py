@@ -1,98 +1,93 @@
-"""Support for Eldes sensors."""
+"""Support for Eldes switches."""
 import logging
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
     DATA_CLIENT,
     DATA_COORDINATOR,
     DOMAIN,
-    OUTPUT_ICONS_MAP
+    OUTPUT_ICONS_MAP,
+    DEFAULT_OUTPUT_ICON,
 )
-from . import EldesDeviceEntity
 
 _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
-    """Set up the Eldes sensor platform."""
+    """Set up the Eldes switch platform."""
     client = hass.data[DOMAIN][entry.entry_id][DATA_CLIENT]
     coordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
     entities = []
 
-    for deviceIndex, _ in enumerate(coordinator.data):
-        for outputIndex, _ in enumerate(coordinator.data[deviceIndex]["outputs"]):
-            entities.append(EldesSwitch(client, coordinator, deviceIndex, outputIndex))
+    for device_index, _ in enumerate(coordinator.data):
+        for output_index, _ in enumerate(coordinator.data[device_index]["outputs"]):
+            entities.append(EldesSwitch(client, coordinator, device_index, output_index))
 
     async_add_entities(entities)
 
 
-class EldesSwitch(EldesDeviceEntity, SwitchEntity):
-    """Class for the battery status sensor."""
+class EldesSwitch(CoordinatorEntity, SwitchEntity):
+    """Representation of an Eldes output switch."""
+
+    def __init__(self, client, coordinator, device_index, entity_index):
+        super().__init__(coordinator)
+        self.client = client
+        self.device_index = device_index
+        self.entity_index = entity_index
+
+    @property
+    def imei(self):
+        return self.coordinator.data[self.device_index].get("imei")
+
+    @property
+    def data(self):
+        return self.coordinator.data[self.device_index]
 
     @property
     def unique_id(self):
-        """Return a unique identifier for this entity."""
-        return f"{self.imei}_output_{self.data['outputs'][self.entity_index]['id']}"
+        return f"{self.imei}_output_{self.output['id']}"
 
     @property
     def name(self):
-        """Return the name of the sensor."""
-        return self.data['outputs'][self.entity_index]['name']
+        return self.output['name']
 
     @property
     def is_on(self):
-        """Return true if switch is on."""
-        return self.data["outputs"][self.entity_index].get("outputState", False)
+        return self.output.get("outputState", False)
 
     @property
     def extra_state_attributes(self):
-        """Return the state attributes."""
-        output = self.data["outputs"][self.entity_index]
-
         return {
-            "hasFault": output["hasFault"],
-            "outputState": output["outputState"],
-            "type": output["type"]
+            "hasFault": self.output.get("hasFault"),
+            "outputState": self.output.get("outputState"),
+            "type": self.output.get("type"),
         }
 
     @property
     def icon(self):
-        """Return the icon of this sensor."""
         try:
-            iconName = self.data["outputs"][self.entity_index]["iconName"]
-
-            if iconName is not None:
-                return OUTPUT_ICONS_MAP[iconName]
-
-            return OUTPUT_ICONS_MAP["ICON_1"]
-
+            icon_name = self.output.get("iconName")
+            if icon_name is not None:
+                return OUTPUT_ICONS_MAP.get(icon_name, OUTPUT_ICONS_MAP[DEFAULT_OUTPUT_ICON])
         except Exception:
-            _LOGGER.info("Unknown output icon for (%s)", self.data['outputs'][self.entity_index]['name'])
-            return OUTPUT_ICONS_MAP["ICON_1"]
+            _LOGGER.info("Unknown output icon for (%s)", self.output.get("name"))
+
+        return OUTPUT_ICONS_MAP[DEFAULT_OUTPUT_ICON]
+
+    @property
+    def output(self):
+        return self.data["outputs"][self.entity_index]
 
     async def async_turn_on(self):
-        """Turn the entity on."""
-        output = self.data["outputs"][self.entity_index]
-
-        await self.client.turn_on_output(
-            self.imei,
-            output['id']
-        )
-
-        self.data["outputs"][self.entity_index]["outputState"] = True
+        await self.client.turn_on_output(self.imei, self.output['id'])
+        self.output["outputState"] = True
         self.async_write_ha_state()
 
     async def async_turn_off(self):
-        """Turn the entity off."""
-        output = self.data["outputs"][self.entity_index]
-
-        await self.client.turn_off_output(
-            self.imei,
-            output['id']
-        )
-
-        self.data["outputs"][self.entity_index]["outputState"] = False
+        await self.client.turn_off_output(self.imei, self.output['id'])
+        self.output["outputState"] = False
         self.async_write_ha_state()

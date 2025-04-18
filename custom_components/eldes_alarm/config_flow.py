@@ -5,7 +5,7 @@ import aiohttp
 import voluptuous as vol
 from http import HTTPStatus
 
-from homeassistant import config_entries, core, exceptions
+from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, CONF_SCAN_INTERVAL
@@ -40,7 +40,7 @@ class EldesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self._username = user_input[CONF_USERNAME]
             self._password = user_input[CONF_PASSWORD]
-            unique_id = user_input[CONF_USERNAME].lower()
+            unique_id = self._username.lower()
             await self.async_set_unique_id(unique_id)
 
             session = async_get_clientsession(self.hass)
@@ -48,8 +48,8 @@ class EldesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             try:
                 await eldes_client.login()
-            except (asyncio.TimeoutError, aiohttp.ClientError) as err:
-                if err.status == HTTPStatus.UNAUTHORIZED:
+            except (asyncio.TimeoutError, aiohttp.ClientResponseError) as err:
+                if isinstance(err, aiohttp.ClientResponseError) and err.status == HTTPStatus.UNAUTHORIZED:
                     errors["base"] = "invalid_auth"
                 else:
                     errors["base"] = "cannot_connect"
@@ -59,12 +59,11 @@ class EldesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             else:
                 if not self._reauth_entry:
                     return self.async_create_entry(
-                        title=user_input[CONF_USERNAME], data=user_input
+                        title=self._username, data=user_input
                     )
                 self.hass.config_entries.async_update_entry(
                     self._reauth_entry, data=user_input, unique_id=unique_id
                 )
-                # Reload the config entry otherwise devices will remain unavailable
                 self.hass.async_create_task(
                     self.hass.config_entries.async_reload(self._reauth_entry.entry_id)
                 )

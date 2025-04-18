@@ -11,6 +11,7 @@ CONF_EVENTS_LIST_SIZE = "events_list_size"
 
 DEFAULT_SCAN_INTERVAL = 30
 DEFAULT_EVENTS_LIST_SIZE = 10
+DEFAULT_OUTPUT_ICON = "ICON_1"
 
 API_URL = "https://cloud.eldesalarms.com:8083/api/"
 

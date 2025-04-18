@@ -5,6 +5,7 @@ import asyncio
 from http import HTTPStatus
 
 import aiohttp
+from aiohttp import ClientError, ClientResponseError
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, CONF_SCAN_INTERVAL
@@ -49,10 +50,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     try:
         await eldes_client.login()
-    except (asyncio.TimeoutError, aiohttp.ClientError) as ex:
-        if ex.status == HTTPStatus.UNAUTHORIZED:
+    except (asyncio.TimeoutError, ClientResponseError) as ex:
+        if isinstance(ex, ClientResponseError) and ex.status == HTTPStatus.UNAUTHORIZED:
             raise ConfigEntryAuthFailed from ex
-
         raise ConfigEntryNotReady from ex
     except Exception as ex:
         _LOGGER.error("Failed to setup Eldes: %s", ex)
@@ -61,12 +61,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async def async_update_data():
         try:
             return await async_get_devices(hass, entry, eldes_client)
-        except:
-            pass
-
-        try:
-            await eldes_client.login()
-            return await async_get_devices(hass, entry, eldes_client)
+        except ClientResponseError as ex:
+            if ex.status == HTTPStatus.UNAUTHORIZED:
+                _LOGGER.warning("Token expired or invalid. Attempting full re-login.")
+                try:
+                    await eldes_client.login()
+                    return await async_get_devices(hass, entry, eldes_client, skip_token_renew=True)
+                except Exception as retry_ex:
+                    _LOGGER.exception("Failed to recover after re-login: %s", retry_ex)
+                    raise UpdateFailed(retry_ex) from retry_ex
+            raise UpdateFailed(ex) from ex
         except Exception as ex:
             _LOGGER.exception("Unknown error occurred during Eldes update request: %s", ex)
             raise UpdateFailed(ex) from ex
@@ -86,24 +90,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         DATA_DEVICES: [],
     }
 
-    # Fetch initial data so we have data when entities subscribe
     await coordinator.async_config_entry_first_refresh()
-
-    # Setup components
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
 
 
-async def async_get_devices(hass: HomeAssistant, entry: ConfigEntry, eldes_client: EldesCloud):
+async def async_get_devices(hass: HomeAssistant, entry: ConfigEntry, eldes_client: EldesCloud, skip_token_renew: bool = False):
     """Fetch data from Eldes API."""
     events_list_size = entry.options.get(CONF_EVENTS_LIST_SIZE, DEFAULT_EVENTS_LIST_SIZE)
 
-    await eldes_client.renew_token()
+    if not skip_token_renew:
+        await eldes_client.renew_token()
 
     devices = await eldes_client.get_devices()
 
-    # Retrieve additional device info, partitions and outputs
     for device in devices:
         device["info"] = await eldes_client.get_device_info(device["imei"])
         device["partitions"] = await eldes_client.get_device_partitions(device["imei"])
@@ -112,7 +113,6 @@ async def async_get_devices(hass: HomeAssistant, entry: ConfigEntry, eldes_clien
         device["events"] = await eldes_client.get_events(events_list_size)
 
     hass.data[DOMAIN][entry.entry_id][DATA_DEVICES] = devices
-
     return devices
 
 

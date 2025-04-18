@@ -5,8 +5,8 @@
   "config_flow": true,
   "dependencies": ["http"],
   "documentation": "https://github.com/augustas2/eldes/blob/master/README.md",
-  "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/augustas2/eldes/issues",
-  "requirements": [],
+  "iot_class": "cloud_polling",
+  "requirements": ["aiohttp>=3.8.0"],
   "version": "1.0.0"
 }
