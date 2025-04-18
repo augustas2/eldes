@@ -13,6 +13,7 @@ from .const import (
     OUTPUT_ICONS_MAP,
     DEFAULT_OUTPUT_ICON,
 )
+from . import EldesDeviceEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,30 +31,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     async_add_entities(entities)
 
 
-class EldesSwitch(CoordinatorEntity, SwitchEntity):
+class EldesSwitch(EldesDeviceEntity, SwitchEntity):
     """Representation of an Eldes output switch."""
 
-    def __init__(self, client, coordinator, device_index, entity_index):
-        super().__init__(coordinator)
-        self.client = client
-        self.device_index = device_index
-        self.entity_index = entity_index
-
     @property
-    def imei(self):
-        return self.coordinator.data[self.device_index].get("imei")
-
-    @property
-    def data(self):
-        return self.coordinator.data[self.device_index]
+    def output(self):
+        return self.data["outputs"][self.entity_index]
 
     @property
     def unique_id(self):
-        return f"{self.imei}_output_{self.output['id']}"
+        return f"{self.imei}_output_{self.output["id"]}"
 
     @property
     def name(self):
-        return self.output['name']
+        return self.output["name"]
 
     @property
     def is_on(self):
@@ -62,32 +53,30 @@ class EldesSwitch(CoordinatorEntity, SwitchEntity):
     @property
     def extra_state_attributes(self):
         return {
-            "hasFault": self.output.get("hasFault"),
-            "outputState": self.output.get("outputState"),
-            "type": self.output.get("type"),
+            "hasFault": self.output["hasFault"],
+            "outputState": self.output["outputState"],
+            "type": self.output["type"]
         }
 
     @property
     def icon(self):
-        try:
-            icon_name = self.output.get("iconName")
-            if icon_name is not None:
-                return OUTPUT_ICONS_MAP.get(icon_name, OUTPUT_ICONS_MAP[DEFAULT_OUTPUT_ICON])
-        except Exception:
-            _LOGGER.info("Unknown output icon for (%s)", self.output.get("name"))
-
-        return OUTPUT_ICONS_MAP[DEFAULT_OUTPUT_ICON]
-
-    @property
-    def output(self):
-        return self.data["outputs"][self.entity_index]
+        icon_name = self.output.get("iconName", DEFAULT_OUTPUT_ICON)
+        return OUTPUT_ICONS_MAP.get(icon_name, OUTPUT_ICONS_MAP[DEFAULT_OUTPUT_ICON])
 
     async def async_turn_on(self):
-        await self.client.turn_on_output(self.imei, self.output['id'])
+        await self.client.turn_on_output(
+            self.imei,
+            self.output["id"]
+        )
+
         self.output["outputState"] = True
         self.async_write_ha_state()
 
     async def async_turn_off(self):
-        await self.client.turn_off_output(self.imei, self.output['id'])
+        await self.client.turn_off_output(
+            self.imei,
+            self.output["id"]
+        )
+
         self.output["outputState"] = False
         self.async_write_ha_state()

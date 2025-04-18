@@ -1,4 +1,4 @@
-"""Support for Eldes sensors."""
+"""Support for Eldes binary sensors."""
 import logging
 
 from homeassistant.components.binary_sensor import (
@@ -14,6 +14,7 @@ from .const import (
     DATA_COORDINATOR,
     DOMAIN,
 )
+from . import EldesDeviceEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,21 +31,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     async_add_entities(entities)
 
 
-class EldesConnectionStatusBinarySensor(CoordinatorEntity, BinarySensorEntity):
+class EldesConnectionStatusBinarySensor(EldesDeviceEntity, BinarySensorEntity):
     """Class for the Eldes connection status sensor."""
-
-    def __init__(self, client, coordinator, device_index):
-        super().__init__(coordinator)
-        self.client = client
-        self.device_index = device_index
-
-    @property
-    def imei(self):
-        return self.coordinator.data[self.device_index].get("imei")
-
-    @property
-    def data(self):
-        return self.coordinator.data[self.device_index]
 
     @property
     def unique_id(self):
@@ -52,7 +40,7 @@ class EldesConnectionStatusBinarySensor(CoordinatorEntity, BinarySensorEntity):
 
     @property
     def name(self):
-        return f"{self.data['info']['model']} Connection Status"
+        return f"{self.data["info"]["model"]} Connection Status"
 
     @property
     def is_on(self):

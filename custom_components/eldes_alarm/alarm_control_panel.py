@@ -1,4 +1,4 @@
-"""Interfaces with Eldes control panels."""
+"""Support for Eldes control panels."""
 import logging
 
 from homeassistant.components.alarm_control_panel import (
@@ -16,6 +16,7 @@ from .const import (
     DOMAIN,
     ALARM_MODES,
 )
+from . import EldesDeviceEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -33,8 +34,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     async_add_entities(entities)
 
 
-class EldesAlarmPanel(CoordinatorEntity, AlarmControlPanelEntity):
-    """Representation of an Eldes Alarm."""
+class EldesAlarmPanel(EldesDeviceEntity, AlarmControlPanelEntity):
+    """Class for the Eldes alarm control panel."""
 
     _attr_supported_features = (
             AlarmControlPanelEntityFeature.ARM_AWAY
@@ -42,88 +43,63 @@ class EldesAlarmPanel(CoordinatorEntity, AlarmControlPanelEntity):
     )
     _attr_code_arm_required = False
 
-    def __init__(self, client, coordinator, device_index, partition_index):
-        super().__init__(coordinator)
-        self.client = client
-        self.device_index = device_index
-        self.partition_index = partition_index
-
     @property
-    def imei(self):
-        return self.coordinator.data[self.device_index].get("imei")
-
-    @property
-    def data(self):
-        return self.coordinator.data[self.device_index]["partitions"][self.partition_index]
+    def partition(self):
+        return self.coordinator.data[self.device_index]["partitions"][self.entity_index]
 
     @property
     def unique_id(self):
-        return f"{self.imei}_zone_{self.data['internalId']}"
+        return f"{self.imei}_zone_{self.partition["internalId"]}"
 
     @property
     def name(self):
-        return self.data["name"]
+        return self.partition["name"]
 
     @property
-    def state(self):
-        return self.data["state"]
+    def alarm_state(self) -> AlarmControlPanelState:
+        return self.partition["state"]
 
     @property
     def extra_state_attributes(self):
         return {
-            "armed": self.data["armed"],
-            "armStay": self.data["armStay"],
-            "state": self.data["state"],
-            "hasUnacceptedPartitionAlarms": self.data["hasUnacceptedPartitionAlarms"],
+            "armed": self.partition["armed"],
+            "armStay": self.partition["armStay"],
+            "state": self.partition["state"],
+            "hasUnacceptedPartitionAlarms": self.partition["hasUnacceptedPartitionAlarms"],
         }
 
     async def async_alarm_disarm(self, code: str | None = None) -> None:
-        current_state = self.state
-        self.data["state"] = AlarmControlPanelState.DISARMING
+        self._attr_alarm_state = AlarmControlPanelState.DISARMING
         self.async_write_ha_state()
 
         try:
             await self.client.renew_token()
             await self.client.set_alarm(
-                ALARM_MODES["DISARM"],
-                self.imei,
-                self.data['internalId']
+                ALARM_MODES["DISARM"], self.imei, self.partition["internalId"]
             )
         except Exception as ex:
-            _LOGGER.error("Failed to change state: %s", ex)
-            self.data["state"] = current_state
-            self.async_write_ha_state()
+            _LOGGER.error("Failed to disarm: %s", ex)
 
     async def async_alarm_arm_away(self, code: str | None = None) -> None:
-        current_state = self.state
-        self.data["state"] = AlarmControlPanelState.ARMING
+        self._attr_alarm_state = AlarmControlPanelState.ARMING
         self.async_write_ha_state()
 
         try:
             await self.client.renew_token()
             await self.client.set_alarm(
-                ALARM_MODES["ARM_AWAY"],
-                self.imei,
-                self.data['internalId']
+                ALARM_MODES["ARM_AWAY"], self.imei, self.partition["internalId"]
             )
         except Exception as ex:
-            _LOGGER.error("Failed to change state: %s", ex)
-            self.data["state"] = current_state
-            self.async_write_ha_state()
+            _LOGGER.error("Failed to arm away: %s", ex)
 
     async def async_alarm_arm_home(self, code: str | None = None) -> None:
-        current_state = self.state
-        self.data["state"] = AlarmControlPanelState.ARMING
+        self._attr_alarm_state = AlarmControlPanelState.ARMING
         self.async_write_ha_state()
 
         try:
             await self.client.renew_token()
             await self.client.set_alarm(
-                ALARM_MODES["ARM_HOME"],
-                self.imei,
-                self.data['internalId']
+                ALARM_MODES["ARM_HOME"], self.imei, self.partition["internalId"]
             )
         except Exception as ex:
-            _LOGGER.error("Failed to change state: %s", ex)
-            self.data["state"] = current_state
-            self.async_write_ha_state()
+            _LOGGER.error("Failed to arm home: %s", ex)

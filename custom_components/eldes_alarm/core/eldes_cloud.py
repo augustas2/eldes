@@ -3,6 +3,7 @@ import asyncio
 import async_timeout
 import logging
 import aiohttp
+from datetime import datetime, timedelta
 
 from homeassistant.components.alarm_control_panel import (
     AlarmControlPanelState
@@ -23,24 +24,25 @@ class EldesCloud:
     """Interacts with Eldes via public API."""
 
     def __init__(self, session: aiohttp.ClientSession, username: str, password: str):
-        """Performs login and save session cookie."""
         self.timeout = 30
         self.headers = {
-            'X-Requested-With': 'XMLHttpRequest',
-            'x-whitelable': 'eldes'
+            "X-Requested-With": "XMLHttpRequest",
+            "x-whitelable": "eldes"
         }
-        self.refresh_token = ''
+        self.refresh_token = ""
+        self.token_expires_at = None
 
         self._http_session = session
         self._username = username
         self._password = password
 
     async def _setOAuthHeader(self, data):
-        if 'refreshToken' in data:
-            self.refresh_token = data['refreshToken']
+        if "refreshToken" in data:
+            self.refresh_token = data["refreshToken"]
 
-        if 'token' in data:
-            self.headers['Authorization'] = f"Bearer {data['token']}"
+        if "token" in data:
+            self.headers["Authorization"] = f"Bearer {data["token"]}"
+            self.token_expires_at = datetime.utcnow() + timedelta(minutes=4)  # token lasts 5 minutes, refresh 1 minute before
 
         return data
 
@@ -72,14 +74,13 @@ class EldesCloud:
             raise
 
     async def _safe_api_call(self, url, method, data=None):
-        """Wrapper for API calls with auto token renewal and reconnect on auth errors."""
         try:
             return await self._api_call(url, method, data)
 
         except aiohttp.ClientResponseError as err:
             if err.status in (401, 403):
                 _LOGGER.warning("Auth error (%s) on %s - attempting to re-authenticate.", err.status, url)
-                await self.renew_token()
+                await self.login()
                 try:
                     return await self._api_call(url, method, data)
                 except Exception as retry_err:
@@ -89,12 +90,12 @@ class EldesCloud:
 
     async def login(self):
         data = {
-            'email': self._username,
-            'password': self._password,
-            'hostDeviceId': ''
+            "email": self._username,
+            "password": self._password,
+            "hostDeviceId": ""
         }
 
-        url = f"{API_URL}{API_PATHS['AUTH']}login"
+        url = f"{API_URL}{API_PATHS["AUTH"]}login"
         resp = await self._api_call(url, "POST", data)
         result = await resp.json()
 
@@ -102,17 +103,16 @@ class EldesCloud:
         return await self._setOAuthHeader(result)
 
     async def renew_token(self):
-        """Updates auth token, falls back to login on 403."""
-        self.headers['Authorization'] = f"Bearer {self.refresh_token}"
-        url = f"{API_URL}{API_PATHS['AUTH']}token"
+        if not self.token_expires_at or datetime.utcnow() < self.token_expires_at:
+            _LOGGER.debug("Token is still valid; skipping token refresh.")
+            return
+
+        self.headers["Authorization"] = f"Bearer {self.refresh_token}"
+        url = f"{API_URL}{API_PATHS["AUTH"]}token"
 
         try:
             async with async_timeout.timeout(self.timeout):
                 response = await self._http_session.get(url, headers=self.headers)
-
-            if response.status == 403:
-                _LOGGER.warning("Token refresh returned 403 - falling back to full login.")
-                return await self.login()
 
             response.raise_for_status()
             result = await response.json()
@@ -129,19 +129,19 @@ class EldesCloud:
             raise
 
     async def get_devices(self):
-        url = f"{API_URL}{API_PATHS['DEVICE']}list"
+        url = f"{API_URL}{API_PATHS["DEVICE"]}list"
         response = await self._safe_api_call(url, "GET")
         result = await response.json()
         return result.get("deviceListEntries", [])
 
     async def get_device_info(self, imei):
-        url = f"{API_URL}{API_PATHS['DEVICE']}info?imei={imei}"
+        url = f"{API_URL}{API_PATHS["DEVICE"]}info?imei={imei}"
         response = await self._safe_api_call(url, "GET")
         return await response.json()
 
     async def get_device_partitions(self, imei):
-        data = {'imei': imei}
-        url = f"{API_URL}{API_PATHS['DEVICE']}partition/list?imei={imei}"
+        data = {"imei": imei}
+        url = f"{API_URL}{API_PATHS["DEVICE"]}partition/list?imei={imei}"
         response = await self._safe_api_call(url, "POST", data)
         result = await response.json()
         partitions = result.get("partitions", [])
@@ -153,37 +153,37 @@ class EldesCloud:
         return partitions
 
     async def get_device_outputs(self, imei):
-        data = {'imei': imei}
-        url = f"{API_URL}{API_PATHS['DEVICE']}list-outputs/{imei}"
+        data = {"imei": imei}
+        url = f"{API_URL}{API_PATHS["DEVICE"]}list-outputs/{imei}"
         response = await self._safe_api_call(url, "POST", data)
         result = await response.json()
         return result.get("deviceOutputs", [])
 
     async def set_alarm(self, mode, imei, zone_id):
-        data = {'imei': imei, 'partitionIndex': zone_id}
-        url = f"{API_URL}{API_PATHS['DEVICE']}action/{mode}"
+        data = {"imei": imei, "partitionIndex": zone_id}
+        url = f"{API_URL}{API_PATHS["DEVICE"]}action/{mode}"
         response = await self._safe_api_call(url, "POST", data)
         return await response.text()
 
     async def turn_on_output(self, imei, output_id):
-        url = f"{API_URL}{API_PATHS['DEVICE']}control/enable/{imei}/{output_id}"
+        url = f"{API_URL}{API_PATHS["DEVICE"]}control/enable/{imei}/{output_id}"
         response = await self._safe_api_call(url, "PUT", {})
         return response
 
     async def turn_off_output(self, imei, output_id):
-        url = f"{API_URL}{API_PATHS['DEVICE']}control/disable/{imei}/{output_id}"
+        url = f"{API_URL}{API_PATHS["DEVICE"]}control/disable/{imei}/{output_id}"
         response = await self._safe_api_call(url, "PUT", {})
         return response
 
     async def get_temperatures(self, imei):
-        url = f"{API_URL}{API_PATHS['DEVICE']}temperatures?imei={imei}"
+        url = f"{API_URL}{API_PATHS["DEVICE"]}temperatures?imei={imei}"
         response = await self._safe_api_call(url, "POST", {})
         result = await response.json()
         return result.get("temperatureDetailsList", [])
 
     async def get_events(self, size):
         data = {"": "", "size": size, "start": 0}
-        url = f"{API_URL}{API_PATHS['DEVICE']}event/list"
+        url = f"{API_URL}{API_PATHS["DEVICE"]}event/list"
         response = await self._safe_api_call(url, "POST", data)
         result = await response.json()
         return result.get("eventDetails", [])

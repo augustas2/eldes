@@ -151,31 +151,3 @@ class EldesDeviceEntity(CoordinatorEntity):
             "sw_version": self.data["info"]["firmware"],
             "model": self.data["info"]["model"]
         }
-
-
-class EldesZoneEntity(CoordinatorEntity):
-    """Defines a base Eldes zone entity."""
-
-    def __init__(self, client, coordinator, device_index, entity_index):
-        """Initialize the Eldes entity."""
-        super().__init__(coordinator)
-        self.client = client
-        self.device_index = device_index
-        self.entity_index = entity_index
-        self.imei = self.coordinator.data[self.device_index]["imei"]
-
-    @property
-    def data(self):
-        """Shortcut to access data for the entity."""
-        return self.coordinator.data[self.device_index]["partitions"][self.entity_index]
-
-    @property
-    def device_info(self):
-        """Return zone info for the Eldes entity."""
-        return {
-            "identifiers": {(DOMAIN, self.data["internalId"])},
-            "name": self.data["name"],
-            "manufacturer": DEFAULT_NAME,
-            "model": DEFAULT_ZONE,
-            "suggested_area": self.data["name"]
-        }

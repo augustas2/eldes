@@ -18,6 +18,7 @@ from .const import (
     ATTR_ALARMS,
     ATTR_USER_ACTIONS,
 )
+from . import EldesDeviceEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,29 +40,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     async_add_entities(entities)
 
 
-class BaseEldesSensor(CoordinatorEntity, SensorEntity):
-    def __init__(self, client, coordinator, device_index):
-        super().__init__(coordinator)
-        self.client = client
-        self.device_index = device_index
+class EldesBatteryStatusSensor(EldesDeviceEntity, SensorEntity):
+    """Class for the battery status sensor."""
 
-    @property
-    def imei(self):
-        return self.coordinator.data[self.device_index].get("imei")
-
-    @property
-    def data(self):
-        return self.coordinator.data[self.device_index]
-
-
-class EldesBatteryStatusSensor(BaseEldesSensor):
     @property
     def unique_id(self):
         return f"{self.imei}_battery_status"
 
     @property
     def name(self):
-        return f"{self.data['info']['model']} Battery Status"
+        return f"{self.data["info"]["model"]} Battery Status"
 
     @property
     def icon(self):
@@ -72,14 +60,16 @@ class EldesBatteryStatusSensor(BaseEldesSensor):
         return BATTERY_STATUS_MAP[self.data["info"].get("batteryStatus", False)]
 
 
-class EldesGSMStrengthSensor(BaseEldesSensor):
+class EldesGSMStrengthSensor(EldesDeviceEntity, SensorEntity):
+    """Class for the GSM strength sensor."""
+
     @property
     def unique_id(self):
         return f"{self.imei}_gsm_strength"
 
     @property
     def name(self):
-        return f"{self.data['info']['model']} GSM Strength"
+        return f"{self.data["info"]["model"]} GSM Strength"
 
     @property
     def icon(self):
@@ -94,14 +84,16 @@ class EldesGSMStrengthSensor(BaseEldesSensor):
         return SIGNAL_STRENGTH_MAP[self.data["info"].get("gsmStrength", 0)]
 
 
-class EldesPhoneNumberSensor(BaseEldesSensor):
+class EldesPhoneNumberSensor(EldesDeviceEntity, SensorEntity):
+    """Class for the phone number sensor."""
+
     @property
     def unique_id(self):
         return f"{self.imei}_phone_number"
 
     @property
     def name(self):
-        return f"{self.data['info']['model']} Phone Number"
+        return f"{self.data["info"]["model"]} Phone Number"
 
     @property
     def icon(self):
@@ -112,19 +104,20 @@ class EldesPhoneNumberSensor(BaseEldesSensor):
         return self.data["info"].get("phoneNumber", "")
 
 
-class EldesTemperatureSensor(BaseEldesSensor):
-    def __init__(self, client, coordinator, device_index, entity_index):
-        super().__init__(client, coordinator, device_index)
-        self.entity_index = entity_index
+class EldesTemperatureSensor(EldesDeviceEntity, SensorEntity):
+    """Class for the temperature sensor."""
+
+    @property
+    def temp(self):
+        return self.data["temp"][self.entity_index]
 
     @property
     def unique_id(self):
-        t = self.__get_temp()
-        return f"{self.imei}_{t['sensorName']}_{t['sensorId']}_temperature"
+        return f"{self.imei}_{self.temp["sensorName"]}_{self.temp["sensorId"]}_temperature"
 
     @property
     def name(self):
-        return f"{self.__get_temp()['sensorName']} Temperature"
+        return f"{self.temp["sensorName"]} Temperature"
 
     @property
     def device_class(self):
@@ -136,13 +129,12 @@ class EldesTemperatureSensor(BaseEldesSensor):
 
     @property
     def native_value(self):
-        return self.__get_temp().get("temperature", 0.0)
-
-    def __get_temp(self):
-        return self.data["temp"][self.entity_index]
+        return self.temp.get("temperature", 0.0)
 
 
-class EventsSensor(BaseEldesSensor):
+class EventsSensor(EldesDeviceEntity, SensorEntity):
+    """Class for the events sensor."""
+
     @property
     def unique_id(self):
         return f"{self.imei}_events"
