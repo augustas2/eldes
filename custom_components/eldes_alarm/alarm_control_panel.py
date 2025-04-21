@@ -29,7 +29,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
     for device_index, device in enumerate(coordinator.data):
         for partition_index, _ in enumerate(device["partitions"]):
-            entities.append(EldesAlarmPanel(client, coordinator, device_index, partition_index))
+            entity = EldesAlarmPanel(client, coordinator, device_index, partition_index)
+            entity._attr_alarm_state = entity.partition["state"]
+            entities.append(entity)
 
     async_add_entities(entities)
 
@@ -45,7 +47,7 @@ class EldesAlarmPanel(EldesDeviceEntity, AlarmControlPanelEntity):
 
     @property
     def partition(self):
-        return self.coordinator.data[self.device_index]["partitions"][self.entity_index]
+        return self.data["partitions"][self.entity_index]
 
     @property
     def unique_id(self):
@@ -56,10 +58,6 @@ class EldesAlarmPanel(EldesDeviceEntity, AlarmControlPanelEntity):
         return self.partition["name"]
 
     @property
-    def alarm_state(self) -> AlarmControlPanelState:
-        return self.partition["state"]
-
-    @property
     def extra_state_attributes(self):
         return {
             "armed": self.partition["armed"],
@@ -67,6 +65,11 @@ class EldesAlarmPanel(EldesDeviceEntity, AlarmControlPanelEntity):
             "state": self.partition["state"],
             "hasUnacceptedPartitionAlarms": self.partition["hasUnacceptedPartitionAlarms"],
         }
+
+    def _handle_coordinator_update(self) -> None:
+        """Update the state when coordinator provides new data."""
+        self._attr_alarm_state = self.partition["state"]
+        self.async_write_ha_state()
 
     async def async_alarm_disarm(self, code: str | None = None) -> None:
         self._attr_alarm_state = AlarmControlPanelState.DISARMING
@@ -77,6 +80,7 @@ class EldesAlarmPanel(EldesDeviceEntity, AlarmControlPanelEntity):
             await self.client.set_alarm(
                 ALARM_MODES["DISARM"], self.imei, self.partition["internalId"]
             )
+            await self.coordinator.async_request_refresh()
         except Exception as ex:
             _LOGGER.error("Failed to disarm: %s", ex)
 
@@ -89,6 +93,7 @@ class EldesAlarmPanel(EldesDeviceEntity, AlarmControlPanelEntity):
             await self.client.set_alarm(
                 ALARM_MODES["ARM_AWAY"], self.imei, self.partition["internalId"]
             )
+            await self.coordinator.async_request_refresh()
         except Exception as ex:
             _LOGGER.error("Failed to arm away: %s", ex)
 
@@ -101,5 +106,6 @@ class EldesAlarmPanel(EldesDeviceEntity, AlarmControlPanelEntity):
             await self.client.set_alarm(
                 ALARM_MODES["ARM_HOME"], self.imei, self.partition["internalId"]
             )
+            await self.coordinator.async_request_refresh()
         except Exception as ex:
             _LOGGER.error("Failed to arm home: %s", ex)

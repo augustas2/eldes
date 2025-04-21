@@ -21,7 +21,6 @@ from homeassistant.helpers.update_coordinator import (
 
 from .const import (
     DEFAULT_NAME,
-    DEFAULT_ZONE,
     DATA_CLIENT,
     DATA_COORDINATOR,
     DATA_DEVICES,

@@ -2,7 +2,6 @@
 
 DOMAIN = "eldes_alarm"
 DEFAULT_NAME = "Eldes"
-DEFAULT_ZONE = "Zone"
 
 DATA_CLIENT = "eldes_client"
 DATA_COORDINATOR = "coordinator"
