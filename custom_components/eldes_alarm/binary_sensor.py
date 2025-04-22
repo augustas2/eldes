@@ -25,7 +25,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     coordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
     entities = []
 
-    for index, _ in enumerate(coordinator.data):
+    for index in range(len(coordinator.data)):
         entities.append(EldesConnectionStatusBinarySensor(client, coordinator, index))
 
     async_add_entities(entities)
@@ -40,7 +40,7 @@ class EldesConnectionStatusBinarySensor(EldesDeviceEntity, BinarySensorEntity):
 
     @property
     def name(self):
-        return f"{self.data["info"]["model"]} Connection Status"
+        return f"{self.data['info']['model']} Connection Status"
 
     @property
     def is_on(self):

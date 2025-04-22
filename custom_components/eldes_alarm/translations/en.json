@@ -3,26 +3,32 @@
     "step": {
       "user": {
         "title": "Eldes Cloud Service",
-        "description": "Please login to your Eldes cloud services account.",
+        "description": "Please log in to your Eldes account.",
         "data": {
           "username": "Email",
           "password": "Password"
         }
+      },
+      "select_device": {
+        "title": "Select a device/location",
+        "data": {
+          "device": "Device"
+        }
       }
     },
     "error": {
-      "cannot_connect": "Can't connect. Try again later.",
-      "invalid_auth": "Email or password is incorrect.",
-      "unknown": "Unknown error."
+      "auth_failed": "Login failed. Please check your credentials.",
+      "no_devices": "No devices found in your Eldes account.",
+      "device_not_found": "The selected device was not found."
     }
   },
   "options": {
     "step": {
       "init": {
         "title": "Configure Eldes integration",
-        "description": "Update the scan interval to poll for data more often.",
+        "description": "Configure the scan interval and the number of events to be retrieved according to your preferences.",
         "data": {
-          "scan_interval": "Scan Interval (seconds)",
+          "scan_interval": "Scan interval (seconds)",
           "events_list_size": "Events list size"
         }
       }

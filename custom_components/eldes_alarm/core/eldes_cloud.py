@@ -41,7 +41,7 @@ class EldesCloud:
             self.refresh_token = data["refreshToken"]
 
         if "token" in data:
-            self.headers["Authorization"] = f"Bearer {data["token"]}"
+            self.headers["Authorization"] = f"Bearer {data['token']}"
             self.token_expires_at = datetime.utcnow() + timedelta(minutes=4)  # token lasts 5 minutes, refresh 1 minute before
 
         return data
@@ -95,7 +95,7 @@ class EldesCloud:
             "hostDeviceId": ""
         }
 
-        url = f"{API_URL}{API_PATHS["AUTH"]}login"
+        url = f"{API_URL}{API_PATHS['AUTH']}login"
         resp = await self._api_call(url, "POST", data)
         result = await resp.json()
 
@@ -108,7 +108,7 @@ class EldesCloud:
             return
 
         self.headers["Authorization"] = f"Bearer {self.refresh_token}"
-        url = f"{API_URL}{API_PATHS["AUTH"]}token"
+        url = f"{API_URL}{API_PATHS['AUTH']}token"
 
         try:
             async with async_timeout.timeout(self.timeout):
@@ -129,19 +129,19 @@ class EldesCloud:
             raise
 
     async def get_devices(self):
-        url = f"{API_URL}{API_PATHS["DEVICE"]}list"
+        url = f"{API_URL}{API_PATHS['DEVICE']}list"
         response = await self._safe_api_call(url, "GET")
         result = await response.json()
         return result.get("deviceListEntries", [])
 
     async def get_device_info(self, imei):
-        url = f"{API_URL}{API_PATHS["DEVICE"]}info?imei={imei}"
+        url = f"{API_URL}{API_PATHS['DEVICE']}info?imei={imei}"
         response = await self._safe_api_call(url, "GET")
         return await response.json()
 
     async def get_device_partitions(self, imei):
         data = {"imei": imei}
-        url = f"{API_URL}{API_PATHS["DEVICE"]}partition/list?imei={imei}"
+        url = f"{API_URL}{API_PATHS['DEVICE']}partition/list?imei={imei}"
         response = await self._safe_api_call(url, "POST", data)
         result = await response.json()
         partitions = result.get("partitions", [])
@@ -154,36 +154,36 @@ class EldesCloud:
 
     async def get_device_outputs(self, imei):
         data = {"imei": imei}
-        url = f"{API_URL}{API_PATHS["DEVICE"]}list-outputs/{imei}"
+        url = f"{API_URL}{API_PATHS['DEVICE']}list-outputs/{imei}"
         response = await self._safe_api_call(url, "POST", data)
         result = await response.json()
         return result.get("deviceOutputs", [])
 
     async def set_alarm(self, mode, imei, zone_id):
         data = {"imei": imei, "partitionIndex": zone_id}
-        url = f"{API_URL}{API_PATHS["DEVICE"]}action/{mode}"
+        url = f"{API_URL}{API_PATHS['DEVICE']}action/{mode}"
         response = await self._safe_api_call(url, "POST", data)
         return await response.text()
 
     async def turn_on_output(self, imei, output_id):
-        url = f"{API_URL}{API_PATHS["DEVICE"]}control/enable/{imei}/{output_id}"
+        url = f"{API_URL}{API_PATHS['DEVICE']}control/enable/{imei}/{output_id}"
         response = await self._safe_api_call(url, "PUT", {})
         return response
 
     async def turn_off_output(self, imei, output_id):
-        url = f"{API_URL}{API_PATHS["DEVICE"]}control/disable/{imei}/{output_id}"
+        url = f"{API_URL}{API_PATHS['DEVICE']}control/disable/{imei}/{output_id}"
         response = await self._safe_api_call(url, "PUT", {})
         return response
 
     async def get_temperatures(self, imei):
-        url = f"{API_URL}{API_PATHS["DEVICE"]}temperatures?imei={imei}"
+        url = f"{API_URL}{API_PATHS['DEVICE']}temperatures?imei={imei}"
         response = await self._safe_api_call(url, "POST", {})
         result = await response.json()
         return result.get("temperatureDetailsList", [])
 
     async def get_events(self, size):
         data = {"": "", "size": size, "start": 0}
-        url = f"{API_URL}{API_PATHS["DEVICE"]}event/list"
+        url = f"{API_URL}{API_PATHS['DEVICE']}event/list"
         response = await self._safe_api_call(url, "POST", data)
         result = await response.json()
         return result.get("eventDetails", [])

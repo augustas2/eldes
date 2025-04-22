@@ -5,7 +5,7 @@ DEFAULT_NAME = "Eldes"
 
 DATA_CLIENT = "eldes_client"
 DATA_COORDINATOR = "coordinator"
-DATA_DEVICES = "devices"
+CONF_DEVICE_IMEI = "device_imei"
 CONF_EVENTS_LIST_SIZE = "events_list_size"
 
 DEFAULT_SCAN_INTERVAL = 30

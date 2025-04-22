@@ -28,7 +28,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     entities = []
 
     for device_index, device in enumerate(coordinator.data):
-        for partition_index, _ in enumerate(device["partitions"]):
+        for partition_index in range(len(device["partitions"])):
             entity = EldesAlarmPanel(client, coordinator, device_index, partition_index)
             entity._attr_alarm_state = entity.partition["state"]
             entities.append(entity)
@@ -45,13 +45,17 @@ class EldesAlarmPanel(EldesDeviceEntity, AlarmControlPanelEntity):
     )
     _attr_code_arm_required = False
 
+    def __init__(self, client, coordinator, device_index, partition_index):
+        super().__init__(client, coordinator, device_index, partition_index)
+        self._attr_alarm_state = None
+
     @property
     def partition(self):
         return self.data["partitions"][self.entity_index]
 
     @property
     def unique_id(self):
-        return f"{self.imei}_zone_{self.partition["internalId"]}"
+        return f"{self.imei}_zone_{self.partition['internalId']}"
 
     @property
     def name(self):
@@ -71,41 +75,39 @@ class EldesAlarmPanel(EldesDeviceEntity, AlarmControlPanelEntity):
         self._attr_alarm_state = self.partition["state"]
         self.async_write_ha_state()
 
-    async def async_alarm_disarm(self, code: str | None = None) -> None:
-        self._attr_alarm_state = AlarmControlPanelState.DISARMING
+    async def _async_set_alarm(self, mode: str, target_state: AlarmControlPanelState, transition_state: AlarmControlPanelState) -> None:
+        previous_state = self._attr_alarm_state
+        self._attr_alarm_state = transition_state
         self.async_write_ha_state()
 
         try:
             await self.client.renew_token()
-            await self.client.set_alarm(
-                ALARM_MODES["DISARM"], self.imei, self.partition["internalId"]
-            )
+            await self.client.set_alarm(mode, self.imei, self.partition["internalId"])
+            self._attr_alarm_state = target_state
+            self.async_write_ha_state()
             await self.coordinator.async_request_refresh()
         except Exception as ex:
-            _LOGGER.error("Failed to disarm: %s", ex)
+            _LOGGER.error("Failed to set alarm (%s): %s", mode, ex)
+            self._attr_alarm_state = previous_state
+            self.async_write_ha_state()
+
+    async def async_alarm_disarm(self, code: str | None = None) -> None:
+        await self._async_set_alarm(
+            ALARM_MODES["DISARM"],
+            AlarmControlPanelState.DISARMED,
+            AlarmControlPanelState.DISARMING
+        )
 
     async def async_alarm_arm_away(self, code: str | None = None) -> None:
-        self._attr_alarm_state = AlarmControlPanelState.ARMING
-        self.async_write_ha_state()
-
-        try:
-            await self.client.renew_token()
-            await self.client.set_alarm(
-                ALARM_MODES["ARM_AWAY"], self.imei, self.partition["internalId"]
-            )
-            await self.coordinator.async_request_refresh()
-        except Exception as ex:
-            _LOGGER.error("Failed to arm away: %s", ex)
+        await self._async_set_alarm(
+            ALARM_MODES["ARM_AWAY"],
+            AlarmControlPanelState.ARMED_AWAY,
+            AlarmControlPanelState.ARMING
+        )
 
     async def async_alarm_arm_home(self, code: str | None = None) -> None:
-        self._attr_alarm_state = AlarmControlPanelState.ARMING
-        self.async_write_ha_state()
-
-        try:
-            await self.client.renew_token()
-            await self.client.set_alarm(
-                ALARM_MODES["ARM_HOME"], self.imei, self.partition["internalId"]
-            )
-            await self.coordinator.async_request_refresh()
-        except Exception as ex:
-            _LOGGER.error("Failed to arm home: %s", ex)
+        await self._async_set_alarm(
+            ALARM_MODES["ARM_HOME"],
+            AlarmControlPanelState.ARMED_HOME,
+            AlarmControlPanelState.ARMING
+        )

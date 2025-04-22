@@ -29,12 +29,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     coordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
     entities = []
 
-    for index, _ in enumerate(coordinator.data):
+    for index in range(len(coordinator.data)):
         entities.append(EldesBatteryStatusSensor(client, coordinator, index))
         entities.append(EldesGSMStrengthSensor(client, coordinator, index))
         entities.append(EldesPhoneNumberSensor(client, coordinator, index))
         entities.append(EventsSensor(client, coordinator, index))
-        for temp_index, _ in enumerate(coordinator.data[index]["temp"]):
+        for temp_index in range(len(coordinator.data[index]["temp"])):
             entities.append(EldesTemperatureSensor(client, coordinator, index, temp_index))
 
     async_add_entities(entities)
@@ -49,7 +49,7 @@ class EldesBatteryStatusSensor(EldesDeviceEntity, SensorEntity):
 
     @property
     def name(self):
-        return f"{self.data["info"]["model"]} Battery Status"
+        return f"{self.data['info']['model']} Battery Status"
 
     @property
     def icon(self):
@@ -69,7 +69,7 @@ class EldesGSMStrengthSensor(EldesDeviceEntity, SensorEntity):
 
     @property
     def name(self):
-        return f"{self.data["info"]["model"]} GSM Strength"
+        return f"{self.data['info']['model']} GSM Strength"
 
     @property
     def icon(self):
@@ -93,7 +93,7 @@ class EldesPhoneNumberSensor(EldesDeviceEntity, SensorEntity):
 
     @property
     def name(self):
-        return f"{self.data["info"]["model"]} Phone Number"
+        return f"{self.data['info']['model']} Phone Number"
 
     @property
     def icon(self):
@@ -113,11 +113,11 @@ class EldesTemperatureSensor(EldesDeviceEntity, SensorEntity):
 
     @property
     def unique_id(self):
-        return f"{self.imei}_{self.temp["sensorName"]}_{self.temp["sensorId"]}_temperature"
+        return f"{self.imei}_{self.temp['sensorName']}_{self.temp['sensorId']}_temperature"
 
     @property
     def name(self):
-        return f"{self.temp["sensorName"]} Temperature"
+        return f"{self.temp['sensorName']} Temperature"
 
     @property
     def device_class(self):

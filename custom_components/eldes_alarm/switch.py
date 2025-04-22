@@ -24,8 +24,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     coordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
     entities = []
 
-    for device_index, _ in enumerate(coordinator.data):
-        for output_index, _ in enumerate(coordinator.data[device_index]["outputs"]):
+    for device_index in range(len(coordinator.data)):
+        for output_index in range(len(coordinator.data[device_index]["outputs"])):
             entities.append(EldesSwitch(client, coordinator, device_index, output_index))
 
     async_add_entities(entities)
@@ -40,7 +40,7 @@ class EldesSwitch(EldesDeviceEntity, SwitchEntity):
 
     @property
     def unique_id(self):
-        return f"{self.imei}_output_{self.output["id"]}"
+        return f"{self.imei}_output_{self.output['id']}"
 
     @property
     def name(self):
