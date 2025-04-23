@@ -153,6 +153,10 @@ class EventsSensor(EldesDeviceEntity, SensorEntity):
         alarms = []
         user_actions = []
         for event in self.data.get("events", []):
+            # Skip events that don't match this device's IMEI
+            if event.get("imei") != self.imei:
+                continue
+
             if event["type"] == "ALARM":
                 alarms.append(self.__add_time(event))
             elif event["type"] in ("ARM", "DISARM"):

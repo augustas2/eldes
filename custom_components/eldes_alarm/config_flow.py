@@ -22,7 +22,6 @@ DATA_SCHEMA = vol.Schema(
 
 class EldesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Eldes."""
-
     VERSION = 1
 
     def __init__(self):
@@ -107,6 +106,11 @@ class EldesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class OptionsFlowHandler(config_entries.OptionsFlow):
     """Handle the options flow for Eldes."""
 
+    def __init__(self, config_entry):
+        """Initialize options flow."""
+        super().__init__()
+        self._config_entry = config_entry
+
     async def async_step_init(self, user_input=None):
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
@@ -117,11 +121,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 {
                     vol.Required(
                         CONF_SCAN_INTERVAL,
-                        default=self.config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+                        default=self._config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
                     ): int,
                     vol.Required(
                         CONF_EVENTS_LIST_SIZE,
-                        default=self.config_entry.options.get(CONF_EVENTS_LIST_SIZE, DEFAULT_EVENTS_LIST_SIZE)
+                        default=self._config_entry.options.get(CONF_EVENTS_LIST_SIZE, DEFAULT_EVENTS_LIST_SIZE)
                     ): int,
                 }
             )
