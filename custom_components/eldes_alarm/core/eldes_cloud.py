@@ -29,8 +29,8 @@ class EldesCloud:
             "X-Requested-With": "XMLHttpRequest",
             "x-whitelable": "eldes"
         }
-        self.refresh_token = ""
-        self.token_expires_at = None
+        self._refresh_token = ""
+        self._token_expires_at = None
 
         self._http_session = session
         self._username = username
@@ -38,11 +38,11 @@ class EldesCloud:
 
     async def _setOAuthHeader(self, data):
         if "refreshToken" in data:
-            self.refresh_token = data["refreshToken"]
+            self._refresh_token = data["refreshToken"]
 
         if "token" in data:
             self.headers["Authorization"] = f"Bearer {data['token']}"
-            self.token_expires_at = datetime.utcnow() + timedelta(minutes=4)  # token lasts 5 minutes, refresh 1 minute before
+            self._token_expires_at = datetime.utcnow() + timedelta(minutes=4)  # token lasts 5 minutes, refresh 1 minute before
 
         return data
 
@@ -103,11 +103,11 @@ class EldesCloud:
         return await self._setOAuthHeader(result)
 
     async def renew_token(self):
-        if not self.token_expires_at or datetime.utcnow() < self.token_expires_at:
+        if not self._token_expires_at or datetime.utcnow() < self._token_expires_at:
             _LOGGER.debug("Token is still valid; skipping token refresh.")
             return
 
-        self.headers["Authorization"] = f"Bearer {self.refresh_token}"
+        self.headers["Authorization"] = f"Bearer {self._refresh_token}"
         url = f"{API_URL}{API_PATHS['AUTH']}token"
 
         try:

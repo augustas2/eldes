@@ -8,7 +8,17 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, CONF_SCAN_INTERVAL
 
 from .core.eldes_cloud import EldesCloud
-from .const import DOMAIN, DEFAULT_SCAN_INTERVAL, DEFAULT_EVENTS_LIST_SIZE, CONF_EVENTS_LIST_SIZE, CONF_DEVICE_IMEI
+from .const import (
+    DOMAIN,
+    DEFAULT_SCAN_INTERVAL,
+    DEFAULT_EVENTS_LIST_SIZE,
+    CONF_EVENTS_LIST_SIZE,
+    CONF_DEVICE_IMEI,
+    SCAN_INTERVAL_MIN,
+    SCAN_INTERVAL_MAX,
+    EVENTS_LIST_SIZE_MIN,
+    EVENTS_LIST_SIZE_MAX,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -122,11 +132,17 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     vol.Required(
                         CONF_SCAN_INTERVAL,
                         default=self._config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
-                    ): int,
+                    ): vol.All(
+                        int,
+                        vol.Range(min=SCAN_INTERVAL_MIN, max=SCAN_INTERVAL_MAX)
+                    ),
                     vol.Required(
                         CONF_EVENTS_LIST_SIZE,
                         default=self._config_entry.options.get(CONF_EVENTS_LIST_SIZE, DEFAULT_EVENTS_LIST_SIZE)
-                    ): int,
+                    ): vol.All(
+                        int,
+                        vol.Range(min=EVENTS_LIST_SIZE_MIN, max=EVENTS_LIST_SIZE_MAX)
+                    ),
                 }
             )
         )

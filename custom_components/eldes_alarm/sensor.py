@@ -17,6 +17,9 @@ from .const import (
     ATTR_EVENTS,
     ATTR_ALARMS,
     ATTR_USER_ACTIONS,
+    EVENT_TYPE_ALARM,
+    EVENT_TYPE_ARM,
+    EVENT_TYPE_DISARM,
 )
 from . import EldesDeviceEntity
 
@@ -157,9 +160,9 @@ class EventsSensor(EldesDeviceEntity, SensorEntity):
             if event.get("imei") != self.imei:
                 continue
 
-            if event["type"] == "ALARM":
+            if event["type"] == EVENT_TYPE_ALARM:
                 alarms.append(self.__add_time(event))
-            elif event["type"] in ("ARM", "DISARM"):
+            elif event["type"] in (EVENT_TYPE_ARM, EVENT_TYPE_DISARM):
                 user_actions.append(self.__add_time_and_name(event))
             else:
                 events.append(self.__add_time(event))
