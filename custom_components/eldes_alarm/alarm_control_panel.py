@@ -47,7 +47,7 @@ class EldesAlarmPanel(EldesDeviceEntity, AlarmControlPanelEntity):
 
     def __init__(self, client, coordinator, device_index, partition_index):
         super().__init__(client, coordinator, device_index, partition_index)
-        self._attr_alarm_state = None
+        self._previous_state = None
 
     @property
     def partition(self):
@@ -70,44 +70,38 @@ class EldesAlarmPanel(EldesDeviceEntity, AlarmControlPanelEntity):
             "hasUnacceptedPartitionAlarms": self.partition["hasUnacceptedPartitionAlarms"],
         }
 
-    def _handle_coordinator_update(self) -> None:
-        """Update the state when coordinator provides new data."""
-        self._attr_alarm_state = self.partition["state"]
-        self.async_write_ha_state()
+    @property
+    def alarm_state(self) -> AlarmControlPanelState:
+        return self.partition["state"]
 
-    async def _async_set_alarm(self, mode: str, target_state: AlarmControlPanelState, transition_state: AlarmControlPanelState) -> None:
-        previous_state = self._attr_alarm_state
-        self._attr_alarm_state = transition_state
+    async def _async_set_alarm(self, mode: str, transition_state: AlarmControlPanelState) -> None:
+        self._previous_state = self.partition["state"]
+        self.partition["state"] = transition_state
         self.async_write_ha_state()
 
         try:
-            await self.client.renew_token()
             await self.client.set_alarm(mode, self.imei, self.partition["internalId"])
-            self._attr_alarm_state = target_state
-            self.async_write_ha_state()
-            await self.coordinator.async_request_refresh()
         except Exception as ex:
             _LOGGER.error("Failed to set alarm (%s): %s", mode, ex)
-            self._attr_alarm_state = previous_state
+            self.partition["state"] = self._previous_state
             self.async_write_ha_state()
+            raise
 
-    async def async_alarm_disarm(self, code: str | None = None) -> None:
+
+    async def async_alarm_disarm(self, code=None) -> None:
         await self._async_set_alarm(
             ALARM_MODES["DISARM"],
-            AlarmControlPanelState.DISARMED,
             AlarmControlPanelState.DISARMING
         )
 
-    async def async_alarm_arm_away(self, code: str | None = None) -> None:
+    async def async_alarm_arm_away(self, code=None) -> None:
         await self._async_set_alarm(
             ALARM_MODES["ARM_AWAY"],
-            AlarmControlPanelState.ARMED_AWAY,
             AlarmControlPanelState.ARMING
         )
 
-    async def async_alarm_arm_home(self, code: str | None = None) -> None:
+    async def async_alarm_arm_home(self, code=None) -> None:
         await self._async_set_alarm(
             ALARM_MODES["ARM_HOME"],
-            AlarmControlPanelState.ARMED_HOME,
             AlarmControlPanelState.ARMING
         )

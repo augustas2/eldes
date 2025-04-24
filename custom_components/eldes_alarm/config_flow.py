@@ -60,6 +60,7 @@ class EldesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 else:
                     self.data[CONF_USERNAME] = email
                     self.data[CONF_PASSWORD] = password
+                    self.data[CONF_PIN] = pin
                     return await self.async_step_select_device()
 
             except Exception as ex:
@@ -68,10 +69,7 @@ class EldesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema({
-                vol.Required(CONF_USERNAME): str,
-                vol.Required(CONF_PASSWORD): str,
-            }),
+            data_schema=DATA_SCHEMA,
             errors=errors
         )
 
@@ -124,7 +122,22 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self._config_entry = config_entry
 
     async def async_step_init(self, user_input=None):
+        """Handle options flow."""
         if user_input is not None:
+            # Extract PIN from user input
+            new_pin = user_input.pop(CONF_PIN)
+
+            # Update the main config data with new PIN
+            new_data = dict(self._config_entry.data)
+            new_data[CONF_PIN] = new_pin
+
+            # Update both data and options
+            self.hass.config_entries.async_update_entry(
+                self._config_entry,
+                data=new_data,
+                options=user_input
+            )
+
             return self.async_create_entry(title="", data=user_input)
 
         return self.async_show_form(
@@ -145,6 +158,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         int,
                         vol.Range(min=EVENTS_LIST_SIZE_MIN, max=EVENTS_LIST_SIZE_MAX)
                     ),
+                    vol.Required(
+                        CONF_PIN,
+                        default=self._config_entry.data.get(CONF_PIN)
+                    ): str,
                 }
             )
         )

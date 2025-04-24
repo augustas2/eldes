@@ -30,7 +30,8 @@
         "description": "Konfigurieren Sie das Scan-Intervall und die Anzahl der abzurufenden Ereignisse nach Ihren Wünschen.",
         "data": {
           "scan_interval": "Scan-Intervall (Sekunden)",
-          "events_list_size": "Ereignislisten-Größe"
+          "events_list_size": "Ereignislisten-Größe",
+          "pin": "PIN-Code"
         }
       }
     }

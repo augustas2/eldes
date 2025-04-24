@@ -30,7 +30,8 @@
         "description": "Configurez l'intervalle de balayage et le nombre d'événements à récupérer selon vos préférences.",
         "data": {
           "scan_interval": "Intervalle de balayage (secondes)",
-          "events_list_size": "Taille de la liste des événements"
+          "events_list_size": "Taille de la liste des événements",
+          "pin": "Code PIN"
         }
       }
     }

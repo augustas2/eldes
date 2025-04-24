@@ -30,7 +30,8 @@
         "description": "Konfigūruokite skanavimo intervalą ir įvykių kiekį pagal savo poreikius.",
         "data": {
           "scan_interval": "Atnaujinimo intervalas (sekundėmis)",
-          "events_list_size": "Įvykių sąrašo ilgis"
+          "events_list_size": "Įvykių sąrašo ilgis",
+          "pin": "PIN kodas"
         }
       }
     }

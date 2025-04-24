@@ -30,7 +30,8 @@
         "description": "Configure the scan interval and the number of events to be retrieved according to your preferences.",
         "data": {
           "scan_interval": "Scan interval (seconds)",
-          "events_list_size": "Events list size"
+          "events_list_size": "Events list size",
+          "pin": "PIN code"
         }
       }
     }
