@@ -7,7 +7,7 @@ from http import HTTPStatus
 from aiohttp import ClientResponseError
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, CONF_SCAN_INTERVAL
+from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, CONF_PIN, CONF_SCAN_INTERVAL
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady, ConfigEntryAuthFailed
 from homeassistant.helpers import config_validation as cv
@@ -42,11 +42,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Eldes from a config entry."""
     username = entry.data[CONF_USERNAME]
     password = entry.data[CONF_PASSWORD]
+    pin = entry.data[CONF_PIN]
     selected_imei = entry.data[CONF_DEVICE_IMEI]
     scan_interval = entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
 
     session = async_get_clientsession(hass)
-    eldes_client = EldesCloud(session, username, password)
+    eldes_client = EldesCloud(session, username, password, pin)
 
     try:
         await eldes_client.login()

@@ -5,7 +5,7 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, CONF_SCAN_INTERVAL
+from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, CONF_PIN, CONF_SCAN_INTERVAL
 
 from .core.eldes_cloud import EldesCloud
 from .const import (
@@ -25,7 +25,8 @@ _LOGGER = logging.getLogger(__name__)
 DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_USERNAME): str,
-        vol.Required(CONF_PASSWORD): str
+        vol.Required(CONF_PASSWORD): str,
+        vol.Required(CONF_PIN): str
     }
 )
 
@@ -46,10 +47,11 @@ class EldesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             email = user_input[CONF_USERNAME]
             password = user_input[CONF_PASSWORD]
+            pin = user_input[CONF_PIN]
 
             try:
                 session = async_get_clientsession(self.hass)
-                self.client = EldesCloud(session, email, password)
+                self.client = EldesCloud(session, email, password, pin)
                 await self.client.login()
 
                 self.devices = await self.client.get_devices()

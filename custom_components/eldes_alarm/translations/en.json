@@ -6,7 +6,8 @@
         "description": "Please log in to your Eldes account.",
         "data": {
           "username": "Email",
-          "password": "Password"
+          "password": "Password",
+          "pin": "PIN code"
         }
       },
       "select_device": {

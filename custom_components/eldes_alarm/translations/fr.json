@@ -1,0 +1,38 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Service Cloud Eldes",
+        "description": "Veuillez vous connecter à votre compte Eldes.",
+        "data": {
+          "username": "Email",
+          "password": "Mot de passe", 
+          "pin": "Code PIN"
+        }
+      },
+      "select_device": {
+        "title": "Sélectionnez un appareil/emplacement",
+        "data": {
+          "device": "Appareil"
+        }
+      }
+    },
+    "error": {
+      "auth_failed": "Échec de la connexion. Veuillez vérifier vos identifiants.",
+      "no_devices": "Aucun appareil trouvé dans votre compte Eldes.",
+      "device_not_found": "L'appareil sélectionné n'a pas été trouvé."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Configurer l'intégration Eldes",
+        "description": "Configurez l'intervalle de balayage et le nombre d'événements à récupérer selon vos préférences.",
+        "data": {
+          "scan_interval": "Intervalle de balayage (secondes)",
+          "events_list_size": "Taille de la liste des événements"
+        }
+      }
+    }
+  }
+}

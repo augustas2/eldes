@@ -6,7 +6,8 @@
         "description": "Prisijunkite prie savo Eldes paskyros.",
         "data": {
           "username": "El. pašto adresas",
-          "password": "Slaptažodis"
+          "password": "Slaptažodis",
+          "pin": "PIN kodas"
         }
       },
       "select_device": {
