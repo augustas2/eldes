@@ -97,7 +97,7 @@ async def async_fetch_device_data(eldes_client: EldesCloud, imei: str, entry: Co
         "partitions": await eldes_client.get_device_partitions(imei),
         "outputs": await eldes_client.get_device_outputs(imei),
         "temp": await eldes_client.get_temperatures(imei),
-        "events": await eldes_client.get_events(events_list_size),
+        "events": await eldes_client.get_events(imei, events_list_size),
     }
 
     return device

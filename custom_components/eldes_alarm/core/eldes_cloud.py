@@ -181,8 +181,8 @@ class EldesCloud:
         result = await response.json()
         return result.get("temperatureDetailsList", [])
 
-    async def get_events(self, size):
-        data = {"": "", "size": size, "start": 0}
+    async def get_events(self, imei, size):
+        data = {"": "", "imei": imei, "size": size, "start": 0}
         url = f"{API_URL}{API_PATHS['DEVICE']}event/list"
         response = await self._safe_api_call(url, "POST", data)
         result = await response.json()
