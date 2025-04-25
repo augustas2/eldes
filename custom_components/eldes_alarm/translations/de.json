@@ -1,0 +1,39 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Eldes Cloud Service",
+        "description": "Bitte melden Sie sich bei Ihrem Eldes-Konto an.",
+        "data": {
+          "username": "E-Mail", 
+          "password": "Passwort",
+          "pin": "PIN-Code"
+        }
+      },
+      "select_device": {
+        "title": "Wählen Sie ein Gerät/Standort aus",
+        "data": {
+          "device": "Gerät"
+        }
+      }
+    },
+    "error": {
+      "auth_failed": "Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre Zugangsdaten.",
+      "no_devices": "Keine Geräte in Ihrem Eldes-Konto gefunden.",
+      "device_not_found": "Das ausgewählte Gerät wurde nicht gefunden."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Eldes-Integration konfigurieren", 
+        "description": "Konfigurieren Sie das Scan-Intervall und die Anzahl der abzurufenden Ereignisse nach Ihren Wünschen.",
+        "data": {
+          "scan_interval": "Scan-Intervall (Sekunden)",
+          "events_list_size": "Ereignislisten-Größe",
+          "pin": "PIN-Code"
+        }
+      }
+    }
+  }
+}

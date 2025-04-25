@@ -3,27 +3,35 @@
     "step": {
       "user": {
         "title": "Eldes Cloud Service",
-        "description": "Prašome prisijungti prie savo Eldes cloud services paskyros.",
+        "description": "Prisijunkite prie savo Eldes paskyros.",
         "data": {
           "username": "El. pašto adresas",
-          "password": "Slaptažodis"
+          "password": "Slaptažodis",
+          "pin": "PIN kodas"
+        }
+      },
+      "select_device": {
+        "title": "Pasirinkite įrenginį/vietą",
+        "data": {
+          "device": "Įrenginys"
         }
       }
     },
     "error": {
-      "cannot_connect": "Prisijungti nepavyko. Pabandykite dar kartą vėliau.",
-      "invalid_auth": "Neteisingas el. pašto adresas arba slaptažodis.",
-      "unknown": "Nežinoma klaida."
+      "auth_failed": "Prisijungti nepavyko. Patikrinkite prisijungimo duomenis.",
+      "no_devices": "Jūsų Eldes paskyroje nerasta jokių įrenginių.",
+      "device_not_found": "Pasirinktas įrenginys nerastas."
     }
   },
   "options": {
     "step": {
       "init": {
         "title": "Eldes integracijos nustatymai",
-        "description": "Pakeiskite atnaujinimo intervalą, norėdami dažniau arba rečiau atnaujinti duomenis.",
+        "description": "Konfigūruokite skanavimo intervalą ir įvykių kiekį pagal savo poreikius.",
         "data": {
-          "scan_interval": "Atnaujinimo intervalas (sekundės)",
-          "events_list_size": "Įvykių sąrašo ilgis"
+          "scan_interval": "Atnaujinimo intervalas (sekundėmis)",
+          "events_list_size": "Įvykių sąrašo ilgis",
+          "pin": "PIN kodas"
         }
       }
     }

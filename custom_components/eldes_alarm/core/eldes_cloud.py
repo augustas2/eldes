@@ -3,6 +3,7 @@ import asyncio
 import async_timeout
 import logging
 import aiohttp
+from datetime import datetime, timedelta
 
 from homeassistant.components.alarm_control_panel import (
     AlarmControlPanelState
@@ -22,30 +23,34 @@ ALARM_STATES_MAP = {
 class EldesCloud:
     """Interacts with Eldes via public API."""
 
-    def __init__(self, session: aiohttp.ClientSession, username: str, password: str):
-        """Performs login and save session cookie."""
-        self.timeout = 30
+    def __init__(self, session: aiohttp.ClientSession, username: str, password: str, pin: str):
+        self.timeout = 15
         self.headers = {
-            'X-Requested-With': 'XMLHttpRequest',
-            'x-whitelable': 'eldes'
+            "X-Requested-With": "XMLHttpRequest",
+            "x-whitelable": "eldes"
         }
-        self.refresh_token = ''
+        self._refresh_token = ""
+        self._token_expires_at = None
 
         self._http_session = session
         self._username = username
         self._password = password
+        self._pin = pin
 
     async def _setOAuthHeader(self, data):
-        if 'refreshToken' in data:
-            self.refresh_token = data['refreshToken']
+        if "refreshToken" in data:
+            self._refresh_token = data["refreshToken"]
 
-        if 'token' in data:
-            self.headers['Authorization'] = f"Bearer {data['token']}"
+        if "token" in data:
+            self.headers["Authorization"] = f"Bearer {data['token']}"
+            self._token_expires_at = datetime.utcnow() + timedelta(minutes=4)  # token lasts 5 minutes, refresh 1 minute before
 
         return data
 
     async def _api_call(self, url, method, data=None):
         try:
+            _LOGGER.debug("API Call -> %s %s | Headers: %s | Data: %s", method, url, self.headers, data)
+
             async with async_timeout.timeout(self.timeout):
                 req = await self._http_session.request(
                     method,
@@ -53,213 +58,136 @@ class EldesCloud:
                     json=data,
                     headers=self.headers
                 )
+
             req.raise_for_status()
             return req
 
+        except aiohttp.ClientResponseError as err:
+            _LOGGER.error("Client response error on API %s request: %s", url, err)
+            raise
+
         except aiohttp.ClientError as err:
-            _LOGGER.error("Client error on API %s request %s", url, err)
+            _LOGGER.error("Client error on API %s request: %s", url, err)
             raise
 
         except asyncio.TimeoutError:
-            _LOGGER.error("Client timeout error on API request %s", url)
+            _LOGGER.error("Timeout error on API request: %s", url)
+            raise
+
+    async def _safe_api_call(self, url, method, data=None):
+        try:
+            return await self._api_call(url, method, data)
+
+        except aiohttp.ClientResponseError as err:
+            if err.status in (401, 403):
+                _LOGGER.warning("Auth error (%s) on %s - attempting to re-authenticate.", err.status, url)
+                await self.login()
+                try:
+                    return await self._api_call(url, method, data)
+                except Exception as retry_err:
+                    _LOGGER.error("Retry failed for %s: %s", url, retry_err)
+                    raise
             raise
 
     async def login(self):
         data = {
-            'email': self._username,
-            'password': self._password,
-            'hostDeviceId': ''
+            "email": self._username,
+            "password": self._password,
+            "hostDeviceId": ""
         }
 
         url = f"{API_URL}{API_PATHS['AUTH']}login"
-
         resp = await self._api_call(url, "POST", data)
         result = await resp.json()
 
-        _LOGGER.debug(
-            "login result: %s",
-            result
-        )
-
+        _LOGGER.debug("login result: %s", result)
         return await self._setOAuthHeader(result)
 
     async def renew_token(self):
-        """Updates auth token."""
-        headers = self.headers
-        headers['Authorization'] = f"Bearer {self.refresh_token}"
+        if not self._token_expires_at or datetime.utcnow() < self._token_expires_at:
+            _LOGGER.debug("Token is still valid; skipping token refresh.")
+            return
 
+        self.headers["Authorization"] = f"Bearer {self._refresh_token}"
         url = f"{API_URL}{API_PATHS['AUTH']}token"
 
-        response = await self._http_session.get(
-            url,
-            timeout=self.timeout,
-            headers=headers
-        )
-        result = await response.json()
+        try:
+            async with async_timeout.timeout(self.timeout):
+                response = await self._http_session.get(url, headers=self.headers)
 
-        _LOGGER.debug(
-            "renew_token result: %s",
-            result
-        )
+            response.raise_for_status()
+            result = await response.json()
 
-        return await self._setOAuthHeader(result)
+            _LOGGER.debug("Token successfully refreshed: %s", result)
+            return await self._setOAuthHeader(result)
+
+        except aiohttp.ClientResponseError as err:
+            _LOGGER.error("Token refresh failed: %s", err)
+            raise
+
+        except Exception as e:
+            _LOGGER.error("Unexpected error during token refresh: %s", e)
+            raise
 
     async def get_devices(self):
-        """Gets device list."""
         url = f"{API_URL}{API_PATHS['DEVICE']}list"
-
-        response = await self._api_call(url, "GET")
+        response = await self._safe_api_call(url, "GET")
         result = await response.json()
-        devices = result.get("deviceListEntries", [])
-
-        _LOGGER.debug(
-            "get_devices result: %s",
-            devices
-        )
-
-        return devices
+        return result.get("deviceListEntries", [])
 
     async def get_device_info(self, imei):
-        """Gets device information."""
         url = f"{API_URL}{API_PATHS['DEVICE']}info?imei={imei}"
-
-        response = await self._api_call(url, "GET")
-        result = await response.json()
-
-        _LOGGER.debug(
-            "get_device_info result: %s",
-            result
-        )
-
-        return result
+        response = await self._safe_api_call(url, "GET")
+        return await response.json()
 
     async def get_device_partitions(self, imei):
-        """Gets device partitions/zones."""
-        data = {
-            'imei': imei
-        }
-
+        data = {"imei": imei, "pin": self._pin}
         url = f"{API_URL}{API_PATHS['DEVICE']}partition/list?imei={imei}"
-
-        response = await self._api_call(url, "POST", data)
+        response = await self._safe_api_call(url, "POST", data)
         result = await response.json()
         partitions = result.get("partitions", [])
 
-        # Replace Eldes state with HA state name
-        for partitionIndex, _ in enumerate(partitions):
-            partitions[partitionIndex]["state"] = ALARM_STATES_MAP[partitions[partitionIndex].get("state", AlarmControlPanelState.DISARMED)]
-
-        _LOGGER.debug(
-            "get_device_partitions result: %s",
-            partitions
-        )
+        for partition in partitions:
+            state = partition.get("state", AlarmControlPanelState.DISARMED)
+            partition["state"] = ALARM_STATES_MAP.get(state, AlarmControlPanelState.DISARMED)
 
         return partitions
 
     async def get_device_outputs(self, imei):
-        """Gets device outputs/automations."""
-        data = {
-            'imei': imei
-        }
-
+        data = {"imei": imei, "pin": self._pin}
         url = f"{API_URL}{API_PATHS['DEVICE']}list-outputs/{imei}"
-
-        response = await self._api_call(url, "POST", data)
+        response = await self._safe_api_call(url, "POST", data)
         result = await response.json()
-        outputs = result.get("deviceOutputs", [])
-
-        _LOGGER.debug(
-            "get_device_outputs result: %s",
-            outputs
-        )
-
-        return outputs
+        return result.get("deviceOutputs", [])
 
     async def set_alarm(self, mode, imei, zone_id):
-        """Sets alarm to provided mode."""
-        data = {
-            'imei': imei,
-            'partitionIndex': zone_id
-        }
-
+        data = {"imei": imei, "partitionIndex": zone_id, "pin": self._pin}
         url = f"{API_URL}{API_PATHS['DEVICE']}action/{mode}"
-
-        response = await self._api_call(url, "POST", data)
-        result = await response.text()
-
-        _LOGGER.debug(
-            "set_alarm result: %s",
-            result
-        )
-
-        return result
+        response = await self._safe_api_call(url, "POST", data)
+        return await response.text()
 
     async def turn_on_output(self, imei, output_id):
-        """Turns on output."""
-        data = {
-            "": ""
-        }
-
+        data = {"": "", "pin": self._pin}
         url = f"{API_URL}{API_PATHS['DEVICE']}control/enable/{imei}/{output_id}"
-
-        response = await self._api_call(url, "PUT", data)
-
-        _LOGGER.debug(
-            "turn_on_output response: %s",
-            response
-        )
-
+        response = await self._safe_api_call(url, "PUT", data)
         return response
 
     async def turn_off_output(self, imei, output_id):
-        """Turns off output."""
-        data = {
-            "": ""
-        }
-
+        data = {"": "", "pin": self._pin}
         url = f"{API_URL}{API_PATHS['DEVICE']}control/disable/{imei}/{output_id}"
-
-        response = await self._api_call(url, "PUT", data)
-
-        _LOGGER.debug(
-            "turn_off_output response: %s",
-            response
-        )
-
+        response = await self._safe_api_call(url, "PUT", data)
         return response
 
     async def get_temperatures(self, imei):
-        """Gets device information."""
+        data = {"": "", "pin": self._pin}
         url = f"{API_URL}{API_PATHS['DEVICE']}temperatures?imei={imei}"
-
-        response = await self._api_call(url, "POST", {})
+        response = await self._safe_api_call(url, "POST", data)
         result = await response.json()
-        temperatures = result.get("temperatureDetailsList", [])
+        return result.get("temperatureDetailsList", [])
 
-        _LOGGER.debug(
-            "get_temperatures result: %s",
-            temperatures
-        )
-
-        return temperatures
-
-    async def get_events(self, size):
-        """Gets device events."""
-        data = {
-            "": "",
-            "size": size,
-            "start": 0
-        }
-
+    async def get_events(self, imei, size):
+        data = {"": "", "imei": imei, "size": size, "start": 0, "pin": self._pin}
         url = f"{API_URL}{API_PATHS['DEVICE']}event/list"
-
-        response = await self._api_call(url, "POST", data)
+        response = await self._safe_api_call(url, "POST", data)
         result = await response.json()
-        events = result.get("eventDetails", [])
-
-        _LOGGER.debug(
-            "get_events result: %s",
-            events
-        )
-
-        return events
+        return result.get("eventDetails", [])
