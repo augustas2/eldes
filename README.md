@@ -1,5 +1,9 @@
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://github.com/hacs/integration)
 
+> ⚠️ **Deprecation Notice**  
+> I am no longer an owner of any Eldes products and will not be maintaining or developing this integration further.  
+> If you have development experience and are interested in taking over maintenance of this project, please open an issue or contact me via GitHub.
+
 # Eldes Alarm
 
 Custom component for Home Assistant. This component is designed to integrate the Eldes security systems including sensors, outputs, etc.
