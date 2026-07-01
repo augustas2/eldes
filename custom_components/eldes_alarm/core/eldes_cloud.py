@@ -59,11 +59,25 @@ class EldesCloud:
                     headers=self.headers
                 )
 
+            try:
+                body = await req.text()
+            except Exception as body_err:
+                body = f"Could not read response body: {body_err}"
+
+            if req.status >= 400:
+                _LOGGER.error(
+                    "Client response error on API %s request: status=%s reason=%s body=%s",
+                    url,
+                    req.status,
+                    req.reason,
+                    body,
+                )
+
             req.raise_for_status()
             return req
 
         except aiohttp.ClientResponseError as err:
-            _LOGGER.error("Client response error on API %s request: %s", url, err)
+            _LOGGER.error("Client response exception on API %s request: %s", url, err)
             raise
 
         except aiohttp.ClientError as err:
@@ -138,10 +152,11 @@ class EldesCloud:
     async def get_device_info(self, imei):
         url = f"{API_URL}{API_PATHS['DEVICE']}info?imei={imei}"
         response = await self._safe_api_call(url, "GET")
-        return await response.json()
+        result = await response.json()
+        return result
 
     async def get_device_partitions(self, imei):
-        data = {"imei": imei, "pin": self._pin}
+        data = {"pinCode": self._pin}
         url = f"{API_URL}{API_PATHS['DEVICE']}partition/list?imei={imei}"
         response = await self._safe_api_call(url, "POST", data)
         result = await response.json()
@@ -154,40 +169,52 @@ class EldesCloud:
         return partitions
 
     async def get_device_outputs(self, imei):
-        data = {"imei": imei, "pin": self._pin}
+        data = {"pinCode": self._pin}
         url = f"{API_URL}{API_PATHS['DEVICE']}list-outputs/{imei}"
-        response = await self._safe_api_call(url, "POST", data)
-        result = await response.json()
-        return result.get("deviceOutputs", [])
+        try:
+            response = await self._safe_api_call(url, "POST", data)
+            result = await response.json()
+            return result.get("deviceOutputs", [])
+        except aiohttp.ClientResponseError as err:
+            _LOGGER.error("Eldes outputs request failed; returning empty outputs list for diagnostic mode: %s", err)
+            return []
 
     async def set_alarm(self, mode, imei, zone_id):
-        data = {"imei": imei, "partitionIndex": zone_id, "pin": self._pin}
+        data = {"imei": imei, "partitionIndex": zone_id, "pinCode": self._pin}
         url = f"{API_URL}{API_PATHS['DEVICE']}action/{mode}"
         response = await self._safe_api_call(url, "POST", data)
         return await response.text()
 
     async def turn_on_output(self, imei, output_id):
-        data = {"": "", "pin": self._pin}
+        data = {"pinCode": self._pin}
         url = f"{API_URL}{API_PATHS['DEVICE']}control/enable/{imei}/{output_id}"
         response = await self._safe_api_call(url, "PUT", data)
         return response
 
     async def turn_off_output(self, imei, output_id):
-        data = {"": "", "pin": self._pin}
+        data = {"pinCode": self._pin}
         url = f"{API_URL}{API_PATHS['DEVICE']}control/disable/{imei}/{output_id}"
         response = await self._safe_api_call(url, "PUT", data)
         return response
 
     async def get_temperatures(self, imei):
-        data = {"": "", "pin": self._pin}
+        data = {"pinCode": self._pin}
         url = f"{API_URL}{API_PATHS['DEVICE']}temperatures?imei={imei}"
-        response = await self._safe_api_call(url, "POST", data)
-        result = await response.json()
-        return result.get("temperatureDetailsList", [])
+        try:
+            response = await self._safe_api_call(url, "POST", data)
+            result = await response.json()
+            return result.get("temperatureDetailsList", [])
+        except aiohttp.ClientResponseError as err:
+            _LOGGER.error("Eldes temperatures request failed; returning empty temperatures list for diagnostic mode: %s", err)
+            return []
 
     async def get_events(self, imei, size):
-        data = {"": "", "imei": imei, "size": size, "start": 0, "pin": self._pin}
+        data = {"imei": imei, "size": size, "start": 0, "pinCode": self._pin}
         url = f"{API_URL}{API_PATHS['DEVICE']}event/list"
-        response = await self._safe_api_call(url, "POST", data)
-        result = await response.json()
-        return result.get("eventDetails", [])
+        try:
+            response = await self._safe_api_call(url, "POST", data)
+            result = await response.json()
+            return result.get("eventDetails", [])
+        except aiohttp.ClientResponseError as err:
+            _LOGGER.error("Eldes events request failed; returning empty events list for diagnostic mode: %s", err)
+            return []
