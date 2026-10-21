@@ -1,18 +1,14 @@
 {
   "domain": "eldes_alarm",
   "name": "Eldes Alarm",
-  "codeowners": [
-    "@Danyct80"
-  ],
+  "codeowners": ["@augustas2"],
   "config_flow": true,
   "dependencies": [
     "http"
   ],
-  "documentation": "https://github.com/Danyct80/eldes/blob/master/README.md",
+  "documentation": "https://github.com/augustas2/eldes/blob/master/README.md",
   "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/Danyct80/eldes/issues",
-  "requirements": [
-    "aiohttp>=3.8.0"
-  ],
-  "version": "2.0.1-danyct80"
+  "issue_tracker": "https://github.com/augustas2/eldes/issues",
+  "requirements": [],
+  "version": "2.1.0"
 }
