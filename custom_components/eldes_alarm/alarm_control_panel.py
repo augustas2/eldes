@@ -39,10 +39,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 class EldesAlarmPanel(EldesDeviceEntity, AlarmControlPanelEntity):
     """Class for the Eldes alarm control panel."""
 
-    _attr_supported_features = (
-            AlarmControlPanelEntityFeature.ARM_AWAY
-            | AlarmControlPanelEntityFeature.ARM_HOME
-    )
+    # Daniele custom fix:
+    # ESIM384 half-arm / stay mode is not reliable in this setup, so expose
+    # only the full arm command in Home Assistant. This hides the "In casa"
+    # button from the default Home Assistant alarm dialog.
+    _attr_supported_features = AlarmControlPanelEntityFeature.ARM_AWAY
     _attr_code_arm_required = False
 
     def __init__(self, client, coordinator, device_index, partition_index):

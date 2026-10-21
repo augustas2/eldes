@@ -1,70 +1,111 @@
-[![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://github.com/hacs/integration)
+# Eldes Alarm - updated working fork
 
-> ⚠️ **Deprecation Notice**  
-> I am no longer an owner of any Eldes products and will not be maintaining or developing this integration further.  
-> If you have development experience and are interested in taking over maintenance of this project, please open an issue or contact me via GitHub.
+> Updated and revised by **Danyct80**.
 
-# Eldes Alarm
+This repository is an updated working fork of the original **Eldes Alarm** custom integration for Home Assistant.
 
-Custom component for Home Assistant. This component is designed to integrate the Eldes security systems including sensors, outputs, etc.
+The original project is no longer actively maintained. This fork is shared to help other Eldes users who still need a working Home Assistant integration.
 
-## Installation
+## What has been fixed
 
-You have two options for installation:
+This revised version includes:
 
-### HACS
+- fixes for recent Home Assistant compatibility issues;
+- fixes for cloud authentication / token refresh problems;
+- PIN code support in Eldes cloud API calls;
+- alarm status reading;
+- working **arm** and **disarm** support from Home Assistant;
+- support for alarm control panel, sensors, binary sensors and outputs/switches.
 
-- In the [HACS](https://hacs.xyz) panel, go to integrations and click the big orange '+' button. Search for 'Eldes Alarm' and click \'Download this repository with HACS'.
+Tested by **Danyct80** with:
 
-### Manually
+- Home Assistant;
+- Eldes ESIM384;
+- Eldes Cloud account access;
+- alarm status reading;
+- arm away / disarm commands.
 
-- Copy "eldes_alarm" folder to the "/config/custom_components" folder.
-- Restart HA server.
+## Important notes
 
-## Usage
+This is an unofficial community fork.
 
-### Events
+Use it at your own risk. Alarm systems are security-critical devices: after installation, test every partition, zone, output and notification before relying on it.
 
-#### Event attributes
+The Home Assistant integration depends on Eldes Cloud APIs. If Eldes changes its cloud API, login, token handling or command endpoints, this integration may need further updates.
 
-- `alarms` -> holds events with alarms
-- `user_actions` -> holds events with user action like arm and disarm
-- `events` -> holds all other events
+## Installation with HACS custom repository
 
-#### Display events
+1. Open Home Assistant.
+2. Go to **HACS**.
+3. Open the three-dot menu in the top right.
+4. Select **Custom repositories**.
+5. Add this repository URL:
 
-To display events used another integration:
-[lovelace-home-feed-card](https://github.com/gadgetchnnel/lovelace-home-feed-card)
-
-#### Example config for [lovelace-home-feed-card](https://github.com/gadgetchnnel/lovelace-home-feed-card)
-```
-type: custom:home-feed-card
-title: Alarm Feed
-card_id: main_feed
-show_notification_title: true
-show_empty: false
-scrollbars_enabled: false
-show_icons: false
-entities:
-  - entity: sensor.events
-    list_attribute: user_actions
-    multiple_items: true
-    timestamp_property: event_time
-    max_items: 5
-    content_template: '{{type}} set by {{name}}'
-  - entity: sensor.events
-    list_attribute: alarms
-    multiple_items: true
-    timestamp_property: event_time
-    max_items: 2
-    content_template: '!!!!! ALARM !!!!! {{message}}'
+```text
+https://github.com/Danyct80/eldes
 ```
 
-![Screenshot 2022-02-20 at 17 36 50](https://user-images.githubusercontent.com/28056781/154851938-55e33ba4-1819-4f1d-bce0-0e7bd97cdc78.png)
+6. Select category:
 
-## Supported devices
+```text
+Integration
+```
 
-- [ESIM364](https://eldesalarms.com/hybrid-alarm-control-panel-with-gsm-gprs-communicator-esim364)
-- [ESIM384](https://eldesalarms.com/esim384)
-- [Pitbull Alarm PRO](https://eldesalarms.com/pitbull-alarm-pro)
-- EPIR3
+7. Click **Add**.
+8. Install **Eldes Alarm** from HACS.
+9. Restart Home Assistant.
+10. Go to **Settings → Devices & services → Add integration**.
+11. Search for **Eldes Alarm** and configure it with your Eldes Cloud account credentials and PIN code.
+
+## Manual installation
+
+Copy the integration folder to your Home Assistant `custom_components` directory:
+
+```text
+custom_components/eldes_alarm
+```
+
+The final path must be:
+
+```text
+/config/custom_components/eldes_alarm
+```
+
+Then restart Home Assistant and add the integration from **Settings → Devices & services**.
+
+## Supported entities
+
+Depending on your Eldes configuration, the integration can expose:
+
+- alarm control panels / partitions;
+- binary sensors;
+- sensors;
+- outputs as switches.
+
+## Alarm control
+
+This fork adds working control commands for the alarm panel:
+
+- arm away;
+- disarm;
+- status reading.
+
+In this revised version, Home Assistant exposes the main full-arm command and disarm command. The unreliable half-arm / stay mode button has been intentionally hidden from the default Home Assistant alarm dialog in this setup.
+
+## Repository structure
+
+```text
+custom_components/eldes_alarm/
+```
+
+This is the Home Assistant custom integration folder.
+
+## Credits
+
+Original project by **augustas2**.
+
+Updated and revised by **Danyct80** to keep the integration usable with newer Home Assistant versions and to add working alarm arm/disarm support.
+
+## License
+
+This fork follows the same license as the original project.
